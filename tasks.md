@@ -38,7 +38,7 @@
 | ID | Task | Status |
 |---|---|---|
 | M3-01 | Define design system: colour palette, typography scale, spacing, component primitives (no off-the-shelf theme) | `[x]` |
-| M3-02 | Build leaderboard page: sortable raw metrics table, region and endpoint-type filters | `[ ]` |
+| M3-02 | Build leaderboard page: sortable raw metrics table, region and endpoint-type filters | `[x]` |
 | M3-03 | Build methodology page: exact probe definitions, measurement rules, anti-gaming approach | `[ ]` |
 | M3-04 | Build provider detail page: per-region metric breakdown, 24 h / 7 d time-series charts | `[ ]` |
 | M3-05 | Implement public read API endpoints (`/v1/providers`, `/v1/metrics`, `/v1/metrics/:id`) with rate limiting | `[ ]` |
@@ -82,3 +82,4 @@
 - 2026-05-26 · M2-04 · hono@4.12.23 + @hono/node-server@2.0.4 for the API server (Node.js adapter); @clickhouse/client@1.18.5 for ClickHouse writes; zod@4.4.3 for payload validation; ClickHouse schema uses MergeTree raw events + AggregatingMergeTree per-minute rollup + materialized view (Option A); schema lives at packages/api/src/db/schema.sql (Option A); ingest auth via Authorization: Bearer token; @types/node@25.9.1 added as devDep with "types":["node"] in tsconfig to fix TypeScript 6 globals resolution.
 - 2026-05-26 · M3-01 · Dark theme with Sui cyan accent (#4da2ff); Geist Sans + Geist Mono via next/font (geist@1.7.1); Next.js 16.2.6 + Tailwind v4 (tailwindcss@4.3.0, @tailwindcss/postcss@4.3.0) bootstrapped in dashboard package with App Router; design tokens defined via Tailwind v4 @theme CSS directive; component primitives: StatCard, MetricBadge, DataTable (client), PageContainer, SectionHeading.
 - 2026-05-26 · M2-05 · Probe daemon posts measurements via node:http/https (cold, agent:false) to INGEST_URL rather than stdout; FLY_REGION used as fallback for REGION env var; multi-stage Dockerfiles for probes and api with pnpm@10.12.4; ClickHouse deployed as a Fly.io Machine on private network (suiscope-clickhouse.internal:8123); schema applied with CREATE DATABASE suiscope + TTL cast fix (toDateTime); probes running in iad + fra; verified 33 rows iad / 22 rows fra in suiscope.measurements.
+- 2026-05-26 · M3-02 · Leaderboard built with typed mock data (src/lib/mock-data.ts) matching the future /v1/metrics API shape; real data wired in M3-05. One display row per provider × endpoint-type; region filter aggregates worst-case uptime/error_rate across regions. Tier thresholds: latency good <100 ms / degraded <300 ms; freshness good ≤2 ckpts; uptime good ≥99.5%; error_rate good <0.5%. Filters and sort state stored in URL search params.
