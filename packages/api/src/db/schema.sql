@@ -2,6 +2,8 @@
 -- Run once against the target ClickHouse instance before starting the API server.
 -- Safe to re-run: all statements use IF NOT EXISTS.
 
+CREATE DATABASE IF NOT EXISTS suiscope;
+
 -- ─── Raw events table ─────────────────────────────────────────────────────────
 -- Append-only. One row per probe observation.
 -- timestamp is stored as DateTime64(3) — unix milliseconds.
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS measurements
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (provider_id, region, endpoint_type, metric, timestamp)
-TTL timestamp + INTERVAL 90 DAY;
+TTL toDateTime(timestamp) + INTERVAL 90 DAY;
 
 -- ─── Per-minute pre-aggregation table (AggregatingMergeTree) ─────────────────
 -- Populated by measurements_mv below.

@@ -1,0 +1,35 @@
+app            = "suiscope-api"
+primary_region = "iad"
+
+[build]
+  # Run `fly deploy --config fly/api.fly.toml` from the repo root.
+  dockerfile = "../packages/api/Dockerfile"
+
+[env]
+  PORT                = "3000"
+  CLICKHOUSE_DATABASE = "suiscope"
+  CLICKHOUSE_USERNAME = "default"
+  # CLICKHOUSE_URL points to the ClickHouse app on Fly's private network.
+  CLICKHOUSE_URL      = "http://suiscope-clickhouse.internal:8123"
+
+# Required secrets — set via `fly secrets set --app suiscope-api`:
+#   CLICKHOUSE_PASSWORD = "<clickhouse default-user password>"
+#   INGEST_SECRET       = "<shared secret sent by probe agents>"
+
+[http_service]
+  internal_port      = 3000
+  force_https        = true
+  auto_stop_machines = false
+  auto_start_machines = false
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval     = "30s"
+    method       = "GET"
+    path         = "/health"
+    timeout      = "5s"
+
+[[vm]]
+  memory   = "512mb"
+  cpu_kind = "shared"
+  cpus     = 1

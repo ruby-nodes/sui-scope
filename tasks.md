@@ -28,7 +28,7 @@
 | M2-02 | Implement GraphQL probe runner: cold-connection latency, freshness via checkpoint query, structured error capture | `[x]` |
 | M2-03 | Seed `config/providers.yaml` with initial providers; wire probe scheduler to load config at startup | `[x]` |
 | M2-04 | Implement ClickHouse schema (raw events table + materialized aggregation views) and API ingest endpoint with Zod validation | `[x]` |
-| M2-05 | Deploy probe agents to Fly.io in 2 regions; verify measurements reach ClickHouse | `[ ]` |
+| M2-05 | Deploy probe agents to Fly.io in 2 regions; verify measurements reach ClickHouse | `[x]` |
 
 ---
 
@@ -81,3 +81,4 @@
 - 2026-05-26 · M2-03 · Initial providers: Mysten Labs (fullnode.mainnet.sui.io), Ankr (sui.grpc.ankr.com / rpc.ankr.com), 01node (sui.01.ro) — all with public gRPC and GraphQL endpoints; js-yaml@4.1.1 for YAML parsing; zod@4.4.3 for env var validation; scheduler emits MeasurementEvent JSON lines to stdout (ingest endpoint wired in M2-04); PROBE_INTERVAL_MS env var added (default 60 000 ms); probes package version bumped to 0.1.0.
 - 2026-05-26 · M2-04 · hono@4.12.23 + @hono/node-server@2.0.4 for the API server (Node.js adapter); @clickhouse/client@1.18.5 for ClickHouse writes; zod@4.4.3 for payload validation; ClickHouse schema uses MergeTree raw events + AggregatingMergeTree per-minute rollup + materialized view (Option A); schema lives at packages/api/src/db/schema.sql (Option A); ingest auth via Authorization: Bearer token; @types/node@25.9.1 added as devDep with "types":["node"] in tsconfig to fix TypeScript 6 globals resolution.
 - 2026-05-26 · M3-01 · Dark theme with Sui cyan accent (#4da2ff); Geist Sans + Geist Mono via next/font (geist@1.7.1); Next.js 16.2.6 + Tailwind v4 (tailwindcss@4.3.0, @tailwindcss/postcss@4.3.0) bootstrapped in dashboard package with App Router; design tokens defined via Tailwind v4 @theme CSS directive; component primitives: StatCard, MetricBadge, DataTable (client), PageContainer, SectionHeading.
+- 2026-05-26 · M2-05 · Probe daemon posts measurements via node:http/https (cold, agent:false) to INGEST_URL rather than stdout; FLY_REGION used as fallback for REGION env var; multi-stage Dockerfiles for probes and api with pnpm@10.12.4; ClickHouse deployed as a Fly.io Machine on private network (suiscope-clickhouse.internal:8123); schema applied with CREATE DATABASE suiscope + TTL cast fix (toDateTime); probes running in iad + fra; verified 33 rows iad / 22 rows fra in suiscope.measurements.

@@ -91,6 +91,10 @@ const EnvSchema = z.object({
    * Optional — defaults to the resolved path from resolveDefaultProvidersPath().
    */
   PROVIDERS_YAML_PATH: z.string().optional(),
+  /** Full URL of the API ingest endpoint, e.g. http://suiscope-api.internal:3000/ingest */
+  INGEST_URL: z.string().url("INGEST_URL must be a valid URL"),
+  /** Shared secret matching the API server's INGEST_SECRET (sent as Authorization: Bearer). */
+  INGEST_SECRET: z.string().min(1, "INGEST_SECRET env var is required"),
 });
 
 export type ProbeEnv = z.infer<typeof EnvSchema>;
@@ -99,10 +103,15 @@ export type ProbeEnv = z.infer<typeof EnvSchema>;
  * Parse and validate probe environment variables.
  * Throws a Zod error (with a descriptive message) on any invalid or missing var.
  *
+ * FLY_REGION (set automatically by Fly.io per machine) is used as a fallback
+ * for REGION if REGION is not explicitly set.
+ *
  * @param env - Defaults to `process.env`. Override in tests.
  */
 export function loadEnv(env: NodeJS.ProcessEnv = process.env): ProbeEnv {
-  return EnvSchema.parse(env);
+  // FLY_REGION is injected automatically by Fly.io; use as fallback if REGION is absent.
+  const merged: NodeJS.ProcessEnv = { REGION: env.FLY_REGION, ...env };
+  return EnvSchema.parse(merged);
 }
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────

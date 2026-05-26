@@ -23,6 +23,7 @@ export function createApp(
   ingestSecret: string,
 ): Hono {
   const app = new Hono();
+  app.get("/health", (c) => c.json({ ok: true }));
   app.post("/ingest", (c) => handleIngest(c, ch, ingestSecret));
   return app;
 }

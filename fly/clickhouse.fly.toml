@@ -1,0 +1,23 @@
+app            = "suiscope-clickhouse"
+primary_region = "iad"
+
+[build]
+  image = "clickhouse/clickhouse-server:24.12-alpine"
+
+[env]
+  CLICKHOUSE_USER = "default"
+  CLICKHOUSE_DB   = "suiscope"
+  # CLICKHOUSE_PASSWORD is set via `fly secrets set --app suiscope-clickhouse`.
+
+# ClickHouse is accessed only via Fly's private network (*.internal hostnames).
+# No [http_service] block — not exposed publicly.
+# The API reaches it at: http://suiscope-clickhouse.internal:8123
+
+[[mounts]]
+  source      = "clickhouse_data"
+  destination = "/var/lib/clickhouse"
+
+[[vm]]
+  memory   = "2gb"
+  cpu_kind = "shared"
+  cpus     = 1

@@ -143,41 +143,84 @@ providers: []
 
 // ─── loadEnv ─────────────────────────────────────────────────────────────────
 
+// Minimal valid env for reuse across loadEnv tests.
+const VALID_ENV = {
+  REGION: "us-east-1",
+  INGEST_URL: "http://suiscope-api.internal:3000/ingest",
+  INGEST_SECRET: "test-secret",
+} as const;
+
 describe("loadEnv", () => {
   it("parses REGION with PROBE_INTERVAL_MS default", () => {
-    const result = loadEnv({ REGION: "us-east-1" });
+    const result = loadEnv({ ...VALID_ENV });
 
     expect(result.REGION).toBe("us-east-1");
     expect(result.PROBE_INTERVAL_MS).toBe(60_000);
   });
 
   it("parses explicit PROBE_INTERVAL_MS", () => {
-    const result = loadEnv({ REGION: "eu-west-1", PROBE_INTERVAL_MS: "30000" });
+    const result = loadEnv({ ...VALID_ENV, REGION: "eu-west-1", PROBE_INTERVAL_MS: "30000" });
 
     expect(result.PROBE_INTERVAL_MS).toBe(30_000);
   });
 
   it("throws when REGION is missing", () => {
-    expect(() => loadEnv({})).toThrow();
+    expect(() => loadEnv({ INGEST_URL: VALID_ENV.INGEST_URL, INGEST_SECRET: VALID_ENV.INGEST_SECRET })).toThrow();
   });
 
   it("throws when REGION is empty string", () => {
-    expect(() => loadEnv({ REGION: "" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, REGION: "" })).toThrow();
   });
 
   it("throws when PROBE_INTERVAL_MS is not a positive integer", () => {
-    expect(() => loadEnv({ REGION: "us-east-1", PROBE_INTERVAL_MS: "0" })).toThrow();
-    expect(() => loadEnv({ REGION: "us-east-1", PROBE_INTERVAL_MS: "-5" })).toThrow();
-    expect(() => loadEnv({ REGION: "us-east-1", PROBE_INTERVAL_MS: "abc" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "0" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "-5" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "abc" })).toThrow();
   });
 
   it("passes through optional PROVIDERS_YAML_PATH", () => {
     const result = loadEnv({
+      ...VALID_ENV,
       REGION: "ap-southeast-1",
       PROVIDERS_YAML_PATH: "/custom/path.yaml",
     });
 
     expect(result.PROVIDERS_YAML_PATH).toBe("/custom/path.yaml");
+  });
+
+  it("uses FLY_REGION as fallback when REGION is not set", () => {
+    const result = loadEnv({
+      FLY_REGION: "fra",
+      INGEST_URL: VALID_ENV.INGEST_URL,
+      INGEST_SECRET: VALID_ENV.INGEST_SECRET,
+    });
+
+    expect(result.REGION).toBe("fra");
+  });
+
+  it("explicit REGION takes precedence over FLY_REGION", () => {
+    const result = loadEnv({ ...VALID_ENV, REGION: "iad", FLY_REGION: "fra" });
+
+    expect(result.REGION).toBe("iad");
+  });
+
+  it("parses INGEST_URL and INGEST_SECRET", () => {
+    const result = loadEnv({ ...VALID_ENV });
+
+    expect(result.INGEST_URL).toBe("http://suiscope-api.internal:3000/ingest");
+    expect(result.INGEST_SECRET).toBe("test-secret");
+  });
+
+  it("throws when INGEST_URL is not a valid URL", () => {
+    expect(() => loadEnv({ ...VALID_ENV, INGEST_URL: "not-a-url" })).toThrow();
+  });
+
+  it("throws when INGEST_SECRET is missing", () => {
+    expect(() => loadEnv({ ...VALID_ENV, INGEST_SECRET: undefined })).toThrow();
+  });
+
+  it("throws when INGEST_SECRET is empty string", () => {
+    expect(() => loadEnv({ ...VALID_ENV, INGEST_SECRET: "" })).toThrow();
   });
 });
 

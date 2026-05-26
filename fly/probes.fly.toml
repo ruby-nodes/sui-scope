@@ -1,0 +1,27 @@
+app            = "suiscope-probes"
+primary_region = "iad"
+
+[build]
+  # Dockerfile path is relative to this fly.toml's directory.
+  # Run `fly deploy --config fly/probes.fly.toml` from the repo root so that
+  # the build context includes all of packages/ and config/.
+  dockerfile = "../packages/probes/Dockerfile"
+
+[env]
+  PROBE_INTERVAL_MS = "60000"
+  # REGION falls back to the FLY_REGION env var set automatically per machine.
+  # Override only if you need a custom label:
+  # REGION = "custom-label"
+
+# Required secrets — set via `fly secrets set --app suiscope-probes`:
+#   INGEST_URL     = "http://suiscope-api.internal:3000/ingest"
+#   INGEST_SECRET  = "<shared secret matching suiscope-api INGEST_SECRET>"
+
+[[vm]]
+  memory   = "256mb"
+  cpu_kind = "shared"
+  cpus     = 1
+
+# Deploy to two regions after initial deploy:
+#   fly machine list --app suiscope-probes          # note the machine ID
+#   fly machine clone <id> --app suiscope-probes --region fra
