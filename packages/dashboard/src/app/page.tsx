@@ -2,7 +2,9 @@ import { Suspense } from "react";
 
 import { LeaderboardClient } from "@/components/leaderboard/leaderboard-client";
 import { PageContainer, SectionHeading } from "@/components/ui";
-import { KNOWN_REGIONS, MOCK_METRICS } from "@/lib/mock-data";
+import { fetchMetrics } from "@/lib/api-client";
+import type { ProviderMetrics, Region } from "@/lib/mock-data";
+import { KNOWN_REGIONS } from "@/lib/mock-data";
 
 function LeaderboardSkeleton() {
   return (
@@ -20,6 +22,24 @@ function LeaderboardSkeleton() {
   );
 }
 
+async function LeaderboardData() {
+  let metrics: ProviderMetrics[];
+  let regions: readonly Region[];
+
+  try {
+    metrics = await fetchMetrics();
+    // Derive regions from real data; fall back to known regions if empty.
+    const seenRegions = [...new Set(metrics.map((m) => m.region))] as Region[];
+    regions = seenRegions.length > 0 ? seenRegions : KNOWN_REGIONS;
+  } catch {
+    // API unavailable — show empty state rather than crash.
+    metrics = [];
+    regions = KNOWN_REGIONS;
+  }
+
+  return <LeaderboardClient rows={metrics} regions={regions} />;
+}
+
 export default function LeaderboardPage() {
   return (
     <PageContainer>
@@ -32,7 +52,7 @@ export default function LeaderboardPage() {
         </p>
       </div>
       <Suspense fallback={<LeaderboardSkeleton />}>
-        <LeaderboardClient rows={MOCK_METRICS} regions={KNOWN_REGIONS} />
+        <LeaderboardData />
       </Suspense>
     </PageContainer>
   );

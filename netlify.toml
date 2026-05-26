@@ -1,0 +1,10 @@
+[build]
+  command = "pnpm --filter @sui-scope/dashboard build"
+  publish = "packages/dashboard/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PNPM_VERSION = "10"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

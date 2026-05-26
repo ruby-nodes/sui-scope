@@ -25,6 +25,12 @@ const EnvSchema = z.object({
       }
       return n;
     }),
+  /**
+   * Filesystem path to config/providers.yaml.
+   * Relative paths are resolved from the process working directory.
+   * Defaults to "config/providers.yaml" (correct when starting from repo root).
+   */
+  PROVIDERS_CONFIG_PATH: z.string().default("config/providers.yaml"),
 });
 
 export type ApiEnv = z.infer<typeof EnvSchema>;

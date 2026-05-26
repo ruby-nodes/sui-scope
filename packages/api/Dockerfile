@@ -16,6 +16,7 @@ RUN pnpm install --frozen-lockfile --filter @sui-scope/api
 
 # Copy source and compile.
 COPY packages/api/ ./packages/api/
+COPY config/ ./config/
 RUN pnpm --filter @sui-scope/api run build
 
 # ─── Production ───────────────────────────────────────────────────────────────
@@ -36,6 +37,8 @@ RUN pnpm install --frozen-lockfile --filter @sui-scope/api --prod
 
 # Copy compiled JS output from builder.
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
+# Copy provider registry — needed at runtime.
+COPY --from=builder /app/config ./config
 
 # Run as non-root for security.
 RUN addgroup -S suiscope && adduser -S suiscope -G suiscope

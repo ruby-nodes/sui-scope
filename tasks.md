@@ -41,7 +41,7 @@
 | M3-02 | Build leaderboard page: sortable raw metrics table, region and endpoint-type filters | `[x]` |
 | M3-03 | Build methodology page: exact probe definitions, measurement rules, anti-gaming approach | `[x]` |
 | M3-04 | Build provider detail page: per-region metric breakdown, 24 h / 7 d time-series charts | `[x]` |
-| M3-05 | Implement public read API endpoints (`/v1/providers`, `/v1/metrics`, `/v1/metrics/:id`) with rate limiting | `[ ]` |
+| M3-05 | Implement public read API endpoints (`/v1/providers`, `/v1/metrics`, `/v1/metrics/:id`) with rate limiting | `[x]` |
 
 ---
 
@@ -85,3 +85,4 @@
 - 2026-05-26 · M3-02 · Leaderboard built with typed mock data (src/lib/mock-data.ts) matching the future /v1/metrics API shape; real data wired in M3-05. One display row per provider × endpoint-type; region filter aggregates worst-case uptime/error_rate across regions. Tier thresholds: latency good <100 ms / degraded <300 ms; freshness good ≤2 ckpts; uptime good ≥99.5%; error_rate good <0.5%. Filters and sort state stored in URL search params.
 - 2026-05-26 · M3-03 · Methodology page is static TSX (no MDX); a minimal sticky NavBar added to root layout linking Leaderboard and Methodology; anti-gaming content drafted from implemented probe mechanics (cold TCP, opaque timing, transparent User-Agent, independent chain-head reference).
 - 2026-05-26 · M3-04 · recharts@3.8.1 (+ react-is@19.2.6 peer dep) for time-series charts; MetricCharts loaded via dynamic(ssr:false) to avoid ResizeObserver SSR; deterministic sin-wave mock time series (fixed epoch 2026-05-26T12:00:00Z) — 24 hourly points (h24) + 28 six-hour points (d7) per series; provider names in leaderboard are now links to /provider/[id].
+- 2026-05-26 · M3-05 · hono-rate-limiter@0.5.3 for /v1/* rate limiting (60 req/60 s per IP, Fly-Client-IP header preferred); providers loaded from PROVIDERS_CONFIG_PATH (default config/providers.yaml) at startup with Zod validation; /v1/providers returns YAML registry; /v1/metrics queries raw measurements table (3 parallel queries: latency+uptime 1h, error_rate 5min, freshness 1h; if() wrapping quantileIf to emit NULL instead of NaN); /v1/metrics/:id supports window=1h|24h|7d|30d with bucket-function lookup; dashboard wired to real API via fetchMetrics/fetchProviderTimeSeries with 60 s Next.js revalidation; zod@4.4.3 added to dashboard for NEXT_PUBLIC_API_URL validation in next.config.ts.

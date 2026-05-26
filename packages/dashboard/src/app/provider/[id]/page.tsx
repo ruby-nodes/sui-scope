@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { RegionBreakdown } from "@/components/provider/region-breakdown";
-import { MOCK_METRICS, MOCK_TIME_SERIES } from "@/lib/mock-data";
+import {
+  fetchMetrics,
+  fetchProviderTimeSeries,
+  mergeTimeSeriesMaps,
+} from "@/lib/api-client";
+import type { ProviderMetrics, TimeSeriesMap } from "@/lib/mock-data";
 import type { MetricChartsProps } from "@/components/provider/metric-charts";
 
 // MetricCharts uses recharts which requires browser APIs — load client-side only.
@@ -35,7 +40,24 @@ interface Props {
 export default async function ProviderPage({ params }: Props) {
   const { id } = await params;
 
-  const rows = MOCK_METRICS.filter((r) => r.provider_id === id);
+  // Fetch all metrics and filter to this provider.
+  // Fetch time-series for both 24h and 7d windows in parallel.
+  let rows: ProviderMetrics[];
+  let timeSeriesMap: TimeSeriesMap;
+
+  try {
+    const [allMetrics, ts24h, ts7d] = await Promise.all([
+      fetchMetrics(),
+      fetchProviderTimeSeries(id, "24h", "h24"),
+      fetchProviderTimeSeries(id, "7d", "d7"),
+    ]);
+    rows = allMetrics.filter((r) => r.provider_id === id);
+    timeSeriesMap = mergeTimeSeriesMaps(ts24h, ts7d);
+  } catch {
+    rows = [];
+    timeSeriesMap = {};
+  }
+
   if (rows.length === 0) notFound();
 
   const providerName = rows[0]!.provider_name;
@@ -57,8 +79,6 @@ export default async function ProviderPage({ params }: Props) {
         <p className="mt-1.5 text-sm text-text-secondary">
           Provider ID:{" "}
           <code className="font-mono text-text-primary">{id}</code>
-          <span className="mx-2 text-border">·</span>
-          Data from snapshot — live API wired in M3-05.
         </p>
       </div>
 
@@ -75,8 +95,9 @@ export default async function ProviderPage({ params }: Props) {
         <SectionHeading as="h2" className="mb-4">
           Time Series
         </SectionHeading>
-        <MetricCharts rows={rows} timeSeriesMap={MOCK_TIME_SERIES} />
+        <MetricCharts rows={rows} timeSeriesMap={timeSeriesMap} />
       </section>
     </PageContainer>
   );
 }
+
