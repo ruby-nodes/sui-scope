@@ -12,7 +12,7 @@
 
 | ID | Task | Status |
 |---|---|---|
-| T-01 | Scaffold monorepo: pnpm workspaces, Turborepo, root `package.json` with workspace globs | `[ ]` |
+| T-01 | Scaffold monorepo: pnpm workspaces, Turborepo, root `package.json` with workspace globs | `[x]` |
 | T-02 | Configure shared tooling: strict `tsconfig.base.json`, ESLint flat config (typescript-eslint), Prettier, Vitest | `[ ]` |
 | T-03 | Create skeleton packages: `probes`, `api`, `dashboard` — each with a passing typecheck, lint, and test | `[ ]` |
 | T-04 | Wire GitHub Actions CI: install → `pnpm turbo typecheck lint test` on push and PR to `main` | `[ ]` |
@@ -72,3 +72,4 @@
 
 <!-- Decisions recorded during task execution are appended here.
      Format: YYYY-MM-DD · {TASK-ID} · {Decision summary in one sentence.} -->
+- 2026-05-26 · T-01 · Pinned turbo@2.9.14, typescript@6.0.3, eslint@10.4.0, typescript-eslint@8.60.0, vitest@4.1.7, prettier@3.8.3; package stubs created in packages/ with Option A (bare stubs now, full skeleton in T-03); config/ files deferred to T-07.
