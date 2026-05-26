@@ -2,6 +2,7 @@
   "name": "sui-scope",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.12.4",
   "engines": {
     "node": ">=22",
@@ -14,6 +15,11 @@
     "build": "turbo build"
   },
   "devDependencies": {
-    "turbo": "2.9.14"
+    "eslint": "10.4.0",
+    "prettier": "3.8.3",
+    "turbo": "2.9.14",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.60.0",
+    "vitest": "4.1.7"
   }
 }
