@@ -40,7 +40,7 @@
 | M3-01 | Define design system: colour palette, typography scale, spacing, component primitives (no off-the-shelf theme) | `[x]` |
 | M3-02 | Build leaderboard page: sortable raw metrics table, region and endpoint-type filters | `[x]` |
 | M3-03 | Build methodology page: exact probe definitions, measurement rules, anti-gaming approach | `[x]` |
-| M3-04 | Build provider detail page: per-region metric breakdown, 24 h / 7 d time-series charts | `[ ]` |
+| M3-04 | Build provider detail page: per-region metric breakdown, 24 h / 7 d time-series charts | `[x]` |
 | M3-05 | Implement public read API endpoints (`/v1/providers`, `/v1/metrics`, `/v1/metrics/:id`) with rate limiting | `[ ]` |
 
 ---
@@ -84,3 +84,4 @@
 - 2026-05-26 · M2-05 · Probe daemon posts measurements via node:http/https (cold, agent:false) to INGEST_URL rather than stdout; FLY_REGION used as fallback for REGION env var; multi-stage Dockerfiles for probes and api with pnpm@10.12.4; ClickHouse deployed as a Fly.io Machine on private network (suiscope-clickhouse.internal:8123); schema applied with CREATE DATABASE suiscope + TTL cast fix (toDateTime); probes running in iad + fra; verified 33 rows iad / 22 rows fra in suiscope.measurements.
 - 2026-05-26 · M3-02 · Leaderboard built with typed mock data (src/lib/mock-data.ts) matching the future /v1/metrics API shape; real data wired in M3-05. One display row per provider × endpoint-type; region filter aggregates worst-case uptime/error_rate across regions. Tier thresholds: latency good <100 ms / degraded <300 ms; freshness good ≤2 ckpts; uptime good ≥99.5%; error_rate good <0.5%. Filters and sort state stored in URL search params.
 - 2026-05-26 · M3-03 · Methodology page is static TSX (no MDX); a minimal sticky NavBar added to root layout linking Leaderboard and Methodology; anti-gaming content drafted from implemented probe mechanics (cold TCP, opaque timing, transparent User-Agent, independent chain-head reference).
+- 2026-05-26 · M3-04 · recharts@3.8.1 (+ react-is@19.2.6 peer dep) for time-series charts; MetricCharts loaded via dynamic(ssr:false) to avoid ResizeObserver SSR; deterministic sin-wave mock time series (fixed epoch 2026-05-26T12:00:00Z) — 24 hourly points (h24) + 28 six-hour points (d7) per series; provider names in leaderboard are now links to /provider/[id].

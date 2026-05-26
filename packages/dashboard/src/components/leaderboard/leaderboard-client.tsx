@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
@@ -175,7 +176,12 @@ const COLUMNS: Column<DisplayRow>[] = [
     sortable: false,
     align: "left",
     render: (row) => (
-      <span className="font-medium text-text-primary">{row.provider_name}</span>
+      <Link
+        href={`/provider/${row.provider_id}`}
+        className="font-medium text-text-primary hover:text-accent transition-colors"
+      >
+        {row.provider_name}
+      </Link>
     ),
   },
   {

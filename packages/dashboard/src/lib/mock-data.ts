@@ -48,3 +48,93 @@ export const MOCK_METRICS: ProviderMetrics[] = [
   { provider_id: "01node",    provider_name: "01node",      endpoint_type: "graphql", region: "iad", latency_p50: 112, latency_p90: 185, latency_p99: 310, freshness_avg: 5, uptime: 0.982, error_rate: 0.018 },
   { provider_id: "01node",    provider_name: "01node",      endpoint_type: "graphql", region: "fra", latency_p50: 68,  latency_p90: 115, latency_p99: 195, freshness_avg: 3, uptime: 0.990, error_rate: 0.010 },
 ];
+
+// ─── Time-series mock data ────────────────────────────────────────────────────
+
+/** A single time-bucketed observation for one provider / endpoint / region. */
+export interface TimeSeriesPoint {
+  /** Unix timestamp in milliseconds. */
+  timestamp: number;
+  latency_p50: number | null;
+  latency_p90: number | null;
+  latency_p99: number | null;
+  /** Average checkpoints behind chain head over the bucket. */
+  freshness_avg: number | null;
+  /** Successful probes / total over the rolling 1-hour window. */
+  uptime: number | null;
+  /** Failed probes / total over the rolling 5-minute window. */
+  error_rate: number | null;
+}
+
+export interface SeriesWindows {
+  /** 24 hourly data points (24 h window). */
+  h24: TimeSeriesPoint[];
+  /** 28 six-hour data points (7 d window). */
+  d7: TimeSeriesPoint[];
+}
+
+/** Key format: `${provider_id}:${endpoint_type}:${region}` */
+export type TimeSeriesMap = Record<string, SeriesWindows>;
+
+/**
+ * Fixed "now" for deterministic mock data generation.
+ * 2026-05-26T12:00:00Z
+ */
+const SERIES_EPOCH = 1748260800000;
+const HOUR_MS = 3_600_000;
+
+/**
+ * Generates a deterministic time-series using overlapping sin waves.
+ * `seed` offsets the phase so each series looks visually distinct.
+ */
+function buildSeries(
+  base: ProviderMetrics,
+  seed: number,
+  intervalMs: number,
+  count: number,
+): TimeSeriesPoint[] {
+  return Array.from({ length: count }, (_, i) => {
+    const w =
+      (Math.sin(i * 0.32 + seed) + Math.sin(i * 1.1 + seed * 2.3)) / 2;
+    const j = (v: number, amp: number) => Math.max(0, v * (1 + w * amp));
+    return {
+      timestamp: SERIES_EPOCH - (count - 1 - i) * intervalMs,
+      latency_p50:
+        base.latency_p50 === null
+          ? null
+          : Math.round(j(base.latency_p50, 0.12)),
+      latency_p90:
+        base.latency_p90 === null
+          ? null
+          : Math.round(j(base.latency_p90, 0.12)),
+      latency_p99:
+        base.latency_p99 === null
+          ? null
+          : Math.round(j(base.latency_p99, 0.15)),
+      freshness_avg:
+        base.freshness_avg === null
+          ? null
+          : Math.round(j(base.freshness_avg, 0.3)),
+      uptime:
+        base.uptime === null ? null : Math.min(1, j(base.uptime, 0.005)),
+      error_rate:
+        base.error_rate === null
+          ? null
+          : Math.min(1, j(base.error_rate, 0.5)),
+    };
+  });
+}
+
+export const MOCK_TIME_SERIES: TimeSeriesMap = Object.fromEntries(
+  MOCK_METRICS.map((row, idx) => {
+    const key = `${row.provider_id}:${row.endpoint_type}:${row.region}`;
+    const seed = idx * 1.73 + 0.5;
+    return [
+      key,
+      {
+        h24: buildSeries(row, seed, HOUR_MS, 24),
+        d7: buildSeries(row, seed + 100, 6 * HOUR_MS, 28),
+      },
+    ];
+  }),
+);
