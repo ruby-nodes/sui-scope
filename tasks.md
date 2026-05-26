@@ -37,7 +37,7 @@
 
 | ID | Task | Status |
 |---|---|---|
-| M3-01 | Define design system: colour palette, typography scale, spacing, component primitives (no off-the-shelf theme) | `[ ]` |
+| M3-01 | Define design system: colour palette, typography scale, spacing, component primitives (no off-the-shelf theme) | `[x]` |
 | M3-02 | Build leaderboard page: sortable raw metrics table, region and endpoint-type filters | `[ ]` |
 | M3-03 | Build methodology page: exact probe definitions, measurement rules, anti-gaming approach | `[ ]` |
 | M3-04 | Build provider detail page: per-region metric breakdown, 24 h / 7 d time-series charts | `[ ]` |
@@ -80,3 +80,4 @@
 - 2026-05-26 · M2-02 · Node.js built-in `node:https` with `agent: false` for cold connections (no new deps); caller-supplied `chainHead` parameter (consistent with gRPC probe); GraphQL query `{ checkpoint { sequenceNumber } }`; endpoint stored as full URL in GraphQLProviderConfig; tests use a real local HTTP server.
 - 2026-05-26 · M2-03 · Initial providers: Mysten Labs (fullnode.mainnet.sui.io), Ankr (sui.grpc.ankr.com / rpc.ankr.com), 01node (sui.01.ro) — all with public gRPC and GraphQL endpoints; js-yaml@4.1.1 for YAML parsing; zod@4.4.3 for env var validation; scheduler emits MeasurementEvent JSON lines to stdout (ingest endpoint wired in M2-04); PROBE_INTERVAL_MS env var added (default 60 000 ms); probes package version bumped to 0.1.0.
 - 2026-05-26 · M2-04 · hono@4.12.23 + @hono/node-server@2.0.4 for the API server (Node.js adapter); @clickhouse/client@1.18.5 for ClickHouse writes; zod@4.4.3 for payload validation; ClickHouse schema uses MergeTree raw events + AggregatingMergeTree per-minute rollup + materialized view (Option A); schema lives at packages/api/src/db/schema.sql (Option A); ingest auth via Authorization: Bearer token; @types/node@25.9.1 added as devDep with "types":["node"] in tsconfig to fix TypeScript 6 globals resolution.
+- 2026-05-26 · M3-01 · Dark theme with Sui cyan accent (#4da2ff); Geist Sans + Geist Mono via next/font (geist@1.7.1); Next.js 16.2.6 + Tailwind v4 (tailwindcss@4.3.0, @tailwindcss/postcss@4.3.0) bootstrapped in dashboard package with App Router; design tokens defined via Tailwind v4 @theme CSS directive; component primitives: StatCard, MetricBadge, DataTable (client), PageContainer, SectionHeading.

@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  /*
+   * SuiScope Design System — Dark theme, Sui cyan accent
+   * All tokens are CSS custom properties consumed by Tailwind v4 utilities.
+   */
+
+  /* ── Background ──────────────────────────────────────────────────── */
+  --color-bg-base: #0b0e14; /* page background */
+  --color-bg-surface: #131720; /* cards, panels */
+  --color-bg-raised: #1a2030; /* dropdowns, popovers */
+
+  /* ── Borders ─────────────────────────────────────────────────────── */
+  --color-border: #252d3d; /* prominent borders, table lines */
+  --color-border-subtle: #1e2535; /* de-emphasised separators */
+
+  /* ── Text ────────────────────────────────────────────────────────── */
+  --color-text-primary: #e8edf5; /* body copy */
+  --color-text-secondary: #8b95a8; /* supporting labels */
+  --color-text-muted: #5a6478; /* placeholders, tertiary */
+
+  /* ── Accent (Sui cyan) ───────────────────────────────────────────── */
+  --color-accent: #4da2ff;
+  --color-accent-hover: #6db8ff;
+  --color-accent-dim: #1a3a5c; /* tinted accent background */
+
+  /* ── Metric tier foreground ──────────────────────────────────────── */
+  --color-tier-good: #22c55e;
+  --color-tier-degraded: #f59e0b;
+  --color-tier-poor: #ef4444;
+  --color-tier-unknown: #6b7280;
+
+  /* ── Metric tier background ──────────────────────────────────────── */
+  --color-tier-good-bg: #052e16;
+  --color-tier-degraded-bg: #451a03;
+  --color-tier-poor-bg: #450a0a;
+  --color-tier-unknown-bg: #1f2937;
+
+  /* ── Typography ──────────────────────────────────────────────────── */
+  /* --font-geist-sans / --font-geist-mono are injected by next/font   */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code",
+    "Fira Mono", monospace;
+
+  /* ── Border radius ───────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+}
