@@ -1,3 +1,5 @@
+export { NavBar } from "./nav-bar";
+
 export type { Tier } from "./stat-card";
 export { StatCard } from "./stat-card";
 export type { StatCardProps } from "./stat-card";
