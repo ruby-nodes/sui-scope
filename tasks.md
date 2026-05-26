@@ -25,7 +25,7 @@
 | ID | Task | Status |
 |---|---|---|
 | M2-01 | Implement gRPC probe runner: cold-connection latency, freshness via `GetLatestCheckpointSequenceNumber`, structured error capture | `[x]` |
-| M2-02 | Implement GraphQL probe runner: cold-connection latency, freshness via checkpoint query, structured error capture | `[ ]` |
+| M2-02 | Implement GraphQL probe runner: cold-connection latency, freshness via checkpoint query, structured error capture | `[x]` |
 | M2-03 | Seed `config/providers.yaml` with initial providers; wire probe scheduler to load config at startup | `[ ]` |
 | M2-04 | Implement ClickHouse schema (raw events table + materialized aggregation views) and API ingest endpoint with Zod validation | `[ ]` |
 | M2-05 | Deploy probe agents to Fly.io in 2 regions; verify measurements reach ClickHouse | `[ ]` |
@@ -77,3 +77,4 @@
 - 2026-05-26 · M1-03 · Next.js upgraded from 15 to 16.2.6 (latest stable at time of task); architecture.md updated accordingly. Dashboard tsconfig overrides to module:ESNext + moduleResolution:Bundler. Plain TS stubs for all three packages; framework deps (Hono, Next.js, @grpc/grpc-js) deferred to M2/M3 tasks.
 - 2026-05-26 · M1-04 · CI workflow was already present from earlier scaffolding; pnpm action uses version: 9 (floating major, accepted); GitHub Actions pinned at @v4 major tags (SHA-pinning deferred as out of M1 scope).
 - 2026-05-26 · M2-01 · Used LedgerService.GetServiceInfo (sui.rpc.v2) instead of deprecated GetLatestCheckpointSequenceNumber JSON-RPC method; minimal proto vendored from MystenLabs/sui-apis; longs decoded via String constructor (type-safe); chain head from fullnode.mainnet.sui.io as fixed reference (Option B); 10 s probe timeout; credentials parameter injectable for tests; unit tests use a real local gRPC server (no mocks).
+- 2026-05-26 · M2-02 · Node.js built-in `node:https` with `agent: false` for cold connections (no new deps); caller-supplied `chainHead` parameter (consistent with gRPC probe); GraphQL query `{ checkpoint { sequenceNumber } }`; endpoint stored as full URL in GraphQLProviderConfig; tests use a real local HTTP server.
