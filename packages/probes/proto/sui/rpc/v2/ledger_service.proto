@@ -1,0 +1,37 @@
+// Minimal subset of the official sui/rpc/v2/ledger_service.proto
+// Source: https://github.com/MystenLabs/sui-apis/blob/main/proto/sui/rpc/v2/ledger_service.proto
+// Only GetServiceInfo is included — that is the only RPC used by the gRPC probe.
+
+syntax = "proto3";
+
+package sui.rpc.v2;
+
+service LedgerService {
+  // Query the service for general information about its current state.
+  rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
+}
+
+message GetServiceInfoRequest {}
+
+message GetServiceInfoResponse {
+  // The chain identifier (digest of the genesis checkpoint).
+  optional string chain_id = 1;
+
+  // Human-readable chain name, e.g. "mainnet" or "testnet".
+  optional string chain = 2;
+
+  // Current epoch based on the highest executed checkpoint.
+  optional uint64 epoch = 3;
+
+  // Checkpoint height of the most recently executed checkpoint.
+  optional uint64 checkpoint_height = 4;
+
+  // The lowest checkpoint for which checkpoint/transaction data are available.
+  optional uint64 lowest_available_checkpoint = 6;
+
+  // The lowest checkpoint for which object data is available.
+  optional uint64 lowest_available_checkpoint_objects = 7;
+
+  // Software version of the service.
+  optional string server = 8;
+}

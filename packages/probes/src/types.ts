@@ -1,0 +1,21 @@
+/**
+ * Canonical measurement event emitted by every probe cycle.
+ * Definition source: architecture.md — do not change field semantics without an ADR.
+ */
+export type MeasurementEvent = {
+  provider_id: string;
+  region: string;
+  endpoint_type: "grpc" | "graphql" | "archival";
+  metric: "latency_ms" | "freshness_checkpoints" | "stream_checkpoint_gap";
+  value: number;
+  success: boolean;
+  error_type: string | null;
+  probe_version: string;
+  timestamp: number; // unix ms
+};
+
+/** Configuration for a single gRPC provider endpoint. */
+export type GrpcProviderConfig = {
+  id: string;
+  endpoint: string; // "host:port", e.g. "fullnode.mainnet.sui.io:443"
+};
