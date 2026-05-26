@@ -20,7 +20,7 @@
 ┌───────────────────────┐            ┌──────────────────────────┐
 │      ClickHouse       │            │       Dashboard           │
 │  append-only events   │            │  packages/dashboard       │
-│  pre-aggregated views │            │  Next.js 15 · Tailwind v4 │
+│  pre-aggregated views │            │  Next.js 16 · Tailwind v4 │
 └───────────────────────┘            └──────────────────────────┘
 ```
 
@@ -79,7 +79,7 @@ Hono server on Node.js 22. Two surface areas:
 
 ### `packages/dashboard`
 
-Next.js 15 app deployed on Vercel. All data fetched from the public API.
+Next.js 16 app deployed on Vercel. All data fetched from the public API.
 
 **Pages:**
 - `/` — Leaderboard (sortable metrics table, all providers, filter by region/endpoint)

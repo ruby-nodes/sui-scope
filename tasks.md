@@ -14,7 +14,7 @@
 |---|---|---|
 | T-01 | Scaffold monorepo: pnpm workspaces, Turborepo, root `package.json` with workspace globs | `[x]` |
 | T-02 | Configure shared tooling: strict `tsconfig.base.json`, ESLint flat config (typescript-eslint), Prettier, Vitest | `[x]` |
-| T-03 | Create skeleton packages: `probes`, `api`, `dashboard` — each with a passing typecheck, lint, and test | `[ ]` |
+| T-03 | Create skeleton packages: `probes`, `api`, `dashboard` — each with a passing typecheck, lint, and test | `[x]` |
 | T-04 | Wire GitHub Actions CI: install → `pnpm turbo typecheck lint test` on push and PR to `main` | `[ ]` |
 
 ---
@@ -74,3 +74,4 @@
      Format: YYYY-MM-DD · {TASK-ID} · {Decision summary in one sentence.} -->
 - 2026-05-26 · T-01 · Pinned turbo@2.9.14, typescript@6.0.3, eslint@10.4.0, typescript-eslint@8.60.0, vitest@4.1.7, prettier@3.8.3; package stubs created in packages/ with Option A (bare stubs now, full skeleton in T-03); config/ files deferred to T-07.
 - 2026-05-26 · T-02 · eslint.config.js uses ESM ("type":"module" added to root package.json); tsconfig.base.json sets module/moduleResolution NodeNext (dashboard overrides in T-03); Prettier defaults (double quotes, 80 cols, trailing commas all, semi true); root vitest.workspace.ts referencing packages/*/vitest.config.ts added for direct vitest runs.
+- 2026-05-26 · T-03 · Next.js upgraded from 15 to 16.2.6 (latest stable at time of task); architecture.md updated accordingly. Dashboard tsconfig overrides to module:ESNext + moduleResolution:Bundler. Plain TS stubs for all three packages; framework deps (Hono, Next.js, @grpc/grpc-js) deferred to M2/M3 tasks.
