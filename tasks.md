@@ -50,7 +50,7 @@
 
 | ID | Task | Status |
 |---|---|---|
-| M4-01 | Implement gRPC stream probe: `stream_uptime_pct`, `stream_checkpoint_gap` (30 s sample), `stream_disconnects_per_hour` | `[ ]` |
+| M4-01 | Implement gRPC stream probe: `stream_uptime_pct`, `stream_checkpoint_gap` (30 s sample), `stream_disconnects_per_hour` | `[x]` |
 | M4-02 | Expand provider list to ≥ 5; deploy probes to 4+ Fly.io regions | `[ ]` |
 | M4-03 | Build comparison page: side-by-side metric charts for 2–4 selected providers | `[ ]` |
 | M4-04 | Publish public API reference documentation | `[ ]` |
@@ -86,3 +86,4 @@
 - 2026-05-26 · M3-03 · Methodology page is static TSX (no MDX); a minimal sticky NavBar added to root layout linking Leaderboard and Methodology; anti-gaming content drafted from implemented probe mechanics (cold TCP, opaque timing, transparent User-Agent, independent chain-head reference).
 - 2026-05-26 · M3-04 · recharts@3.8.1 (+ react-is@19.2.6 peer dep) for time-series charts; MetricCharts loaded via dynamic(ssr:false) to avoid ResizeObserver SSR; deterministic sin-wave mock time series (fixed epoch 2026-05-26T12:00:00Z) — 24 hourly points (h24) + 28 six-hour points (d7) per series; provider names in leaderboard are now links to /provider/[id].
 - 2026-05-26 · M3-05 · hono-rate-limiter@0.5.3 for /v1/* rate limiting (60 req/60 s per IP, Fly-Client-IP header preferred); providers loaded from PROVIDERS_CONFIG_PATH (default config/providers.yaml) at startup with Zod validation; /v1/providers returns YAML registry; /v1/metrics queries raw measurements table (3 parallel queries: latency+uptime 1h, error_rate 5min, freshness 1h; if() wrapping quantileIf to emit NULL instead of NaN); /v1/metrics/:id supports window=1h|24h|7d|30d with bucket-function lookup; dashboard wired to real API via fetchMetrics/fetchProviderTimeSeries with 60 s Next.js revalidation; zod@4.4.3 added to dashboard for NEXT_PUBLIC_API_URL validation in next.config.ts.
+- 2026-05-26 · M4-01 · SubscriptionService.SubscribeCheckpoints used for stream probe (subscription_service.proto vendored); stream probe runs as a long-lived background manager alongside the scheduler (one instance per gRPC provider, state scoped per closure); 30 s gap samples via separate GetServiceInfo chain-head call; 1-hour observation window for stream_uptime_pct and stream_disconnects_per_hour; 5 s grace window de-bounces rapid disconnect events; all gRPC providers assumed to support streaming (no config change needed).

@@ -1,37 +1,15 @@
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { RegionBreakdown } from "@/components/provider/region-breakdown";
+import { MetricCharts } from "@/components/provider/metric-charts-loader";
 import {
   fetchMetrics,
   fetchProviderTimeSeries,
   mergeTimeSeriesMaps,
 } from "@/lib/api-client";
 import type { ProviderMetrics, TimeSeriesMap } from "@/lib/mock-data";
-import type { MetricChartsProps } from "@/components/provider/metric-charts";
-
-// MetricCharts uses recharts which requires browser APIs — load client-side only.
-const MetricCharts = dynamic<MetricChartsProps>(
-  () =>
-    import("@/components/provider/metric-charts").then((m) => ({
-      default: m.MetricCharts,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-64 animate-pulse rounded-md border border-border bg-bg-surface"
-          />
-        ))}
-      </div>
-    ),
-  },
-);
 
 interface Props {
   params: Promise<{ id: string }>;

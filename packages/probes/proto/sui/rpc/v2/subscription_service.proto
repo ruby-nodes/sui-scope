@@ -1,0 +1,27 @@
+// Minimal subset of the official sui/rpc/v2/subscription_service.proto
+// Source: https://github.com/MystenLabs/sui-apis/blob/main/proto/sui/rpc/v2/subscription_service.proto
+// Only SubscribeCheckpoints is included — that is the only RPC used by the stream probe.
+
+syntax = "proto3";
+
+package sui.rpc.v2;
+
+service SubscriptionService {
+  // Subscribe to the stream of checkpoints.
+  //
+  // Streams start from the latest executed checkpoint and proceed in-order
+  // without gaps. The stream probe uses `cursor` (the checkpoint sequence
+  // number) to measure stream freshness and stability.
+  rpc SubscribeCheckpoints(SubscribeCheckpointsRequest)
+      returns (stream SubscribeCheckpointsResponse);
+}
+
+// No required fields — the server begins streaming from the latest checkpoint.
+message SubscribeCheckpointsRequest {}
+
+// Only `cursor` is read by the stream probe; all other fields sent by the
+// server are silently ignored (proto3 forward-compatibility).
+message SubscribeCheckpointsResponse {
+  // The checkpoint sequence number of the current cursor into the stream.
+  optional uint64 cursor = 1;
+}

@@ -9,6 +9,7 @@ import {
   resolveDefaultProvidersPath,
 } from "./config.js";
 import { startScheduler } from "./scheduler.js";
+import { startStreamProbe } from "./stream-probe.js";
 import type { MeasurementEvent } from "./types.js";
 
 export const PACKAGE_NAME = "@sui-scope/probes";
@@ -20,6 +21,8 @@ export { loadProviders, loadEnv, resolveDefaultProvidersPath, readProbeVersion }
 export type { LoadedProviders, ProbeEnv } from "./config.js";
 export { runOneCycle, startScheduler } from "./scheduler.js";
 export type { SchedulerConfig, SchedulerDeps } from "./scheduler.js";
+export { startStreamProbe, SubscriptionService } from "./stream-probe.js";
+export type { StreamProbeDeps } from "./stream-probe.js";
 
 // ─── Network emit ─────────────────────────────────────────────────────────────
 
@@ -79,6 +82,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       `grpc_providers=${providers.grpc.length} graphql_providers=${providers.graphql.length}`,
   );
 
+  const networkEmit = createNetworkEmit(env.INGEST_URL, env.INGEST_SECRET);
+
   startScheduler(
     {
       grpcProviders: providers.grpc,
@@ -87,6 +92,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       probeVersion,
       intervalMs: env.PROBE_INTERVAL_MS,
     },
-    { emit: createNetworkEmit(env.INGEST_URL, env.INGEST_SECRET) },
+    { emit: networkEmit },
   );
+
+  // Start one stream probe per gRPC provider (Phase 2 — M4-01).
+  // All gRPC providers are assumed to expose SubscriptionService.SubscribeCheckpoints.
+  for (const provider of providers.grpc) {
+    startStreamProbe(provider, env.REGION, probeVersion, { emit: networkEmit });
+  }
 }

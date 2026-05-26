@@ -54,9 +54,12 @@ Long-running Node.js daemon deployed per region on Fly.io.
 | Latency + freshness | 60 s |
 | Error rate (rolling) | derived from above |
 | Uptime (rolling) | derived from above |
-| Stream gap (Phase 2) | sampled every 30 s |
+| Stream checkpoint gap | sampled every 30 s |
+| Stream uptime + disconnects | emitted every 1 hour (window reset) |
 
-**No shared mutable state between cycles.** Each cycle reads config, probes, emits, and exits.
+**No shared mutable state between scheduler cycles.** Each cycle reads config, probes, emits, and exits.
+
+**Stream probe:** runs as a long-lived background manager alongside the scheduler (one instance per gRPC provider). Uses `SubscriptionService.SubscribeCheckpoints` from the Sui v2 gRPC API (`subscription_service.proto`). Reconnects automatically on disconnect; applies a 5 s grace window when counting disconnect events. State is scoped per-provider to each `startStreamProbe()` closure — not shared across providers.
 
 ---
 

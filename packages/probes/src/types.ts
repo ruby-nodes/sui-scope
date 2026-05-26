@@ -6,7 +6,12 @@ export type MeasurementEvent = {
   provider_id: string;
   region: string;
   endpoint_type: "grpc" | "graphql" | "archival";
-  metric: "latency_ms" | "freshness_checkpoints" | "stream_checkpoint_gap";
+  metric:
+    | "latency_ms"
+    | "freshness_checkpoints"
+    | "stream_checkpoint_gap"
+    | "stream_uptime_pct"
+    | "stream_disconnects_per_hour";
   value: number;
   success: boolean;
   error_type: string | null;
