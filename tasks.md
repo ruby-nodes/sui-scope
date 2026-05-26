@@ -26,7 +26,7 @@
 |---|---|---|
 | M2-01 | Implement gRPC probe runner: cold-connection latency, freshness via `GetLatestCheckpointSequenceNumber`, structured error capture | `[x]` |
 | M2-02 | Implement GraphQL probe runner: cold-connection latency, freshness via checkpoint query, structured error capture | `[x]` |
-| M2-03 | Seed `config/providers.yaml` with initial providers; wire probe scheduler to load config at startup | `[ ]` |
+| M2-03 | Seed `config/providers.yaml` with initial providers; wire probe scheduler to load config at startup | `[x]` |
 | M2-04 | Implement ClickHouse schema (raw events table + materialized aggregation views) and API ingest endpoint with Zod validation | `[ ]` |
 | M2-05 | Deploy probe agents to Fly.io in 2 regions; verify measurements reach ClickHouse | `[ ]` |
 
@@ -78,3 +78,4 @@
 - 2026-05-26 · M1-04 · CI workflow was already present from earlier scaffolding; pnpm action uses version: 9 (floating major, accepted); GitHub Actions pinned at @v4 major tags (SHA-pinning deferred as out of M1 scope).
 - 2026-05-26 · M2-01 · Used LedgerService.GetServiceInfo (sui.rpc.v2) instead of deprecated GetLatestCheckpointSequenceNumber JSON-RPC method; minimal proto vendored from MystenLabs/sui-apis; longs decoded via String constructor (type-safe); chain head from fullnode.mainnet.sui.io as fixed reference (Option B); 10 s probe timeout; credentials parameter injectable for tests; unit tests use a real local gRPC server (no mocks).
 - 2026-05-26 · M2-02 · Node.js built-in `node:https` with `agent: false` for cold connections (no new deps); caller-supplied `chainHead` parameter (consistent with gRPC probe); GraphQL query `{ checkpoint { sequenceNumber } }`; endpoint stored as full URL in GraphQLProviderConfig; tests use a real local HTTP server.
+- 2026-05-26 · M2-03 · Initial providers: Mysten Labs (fullnode.mainnet.sui.io), Ankr (sui.grpc.ankr.com / rpc.ankr.com), 01node (sui.01.ro) — all with public gRPC and GraphQL endpoints; js-yaml@4.1.1 for YAML parsing; zod@4.4.3 for env var validation; scheduler emits MeasurementEvent JSON lines to stdout (ingest endpoint wired in M2-04); PROBE_INTERVAL_MS env var added (default 60 000 ms); probes package version bumped to 0.1.0.
