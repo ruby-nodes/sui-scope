@@ -53,7 +53,7 @@
 | M4-01 | Implement gRPC stream probe: `stream_uptime_pct`, `stream_checkpoint_gap` (30 s sample), `stream_disconnects_per_hour` | `[x]` |
 | M4-02 | Expand provider list to ≥ 5; deploy probes to 4+ Fly.io regions | `[x]` |
 | M4-03 | Build comparison page: side-by-side metric charts for 2–4 selected providers | `[x]` |
-| M4-04 | Publish public API reference documentation | `[ ]` |
+| M4-04 | Publish public API reference documentation | `[x]` |
 
 ---
 
@@ -89,3 +89,4 @@
 - 2026-05-26 · M4-01 · SubscriptionService.SubscribeCheckpoints used for stream probe (subscription_service.proto vendored); stream probe runs as a long-lived background manager alongside the scheduler (one instance per gRPC provider, state scoped per closure); 30 s gap samples via separate GetServiceInfo chain-head call; 1-hour observation window for stream_uptime_pct and stream_disconnects_per_hour; 5 s grace window de-bounces rapid disconnect events; all gRPC providers assumed to support streaming (no config change needed).
 - 2026-05-27 · M4-02 · Added Triton One (gRPC-only, sui-mainnet.nodeinfra.com:443 — confirmed HTTP/2 + GetServiceInfo responding); Allnodes skipped (no public gRPC or GraphQL endpoint — only JSON-RPC at publicnode.com which is unsupported); provider count is 4 (not 5) by explicit user decision; probe machines cloned to sin, nrt, lax (new) + fra restarted → 5 active regions: iad, fra, sin, nrt, lax.
 - 2026-05-27 · M4-03 · Comparison page at /compare uses URL query params (?p=) for shareable provider selection; leaderboard gains checkbox column + "Compare (N) →" button; one overlay chart per metric (4 charts) with one line per provider; stat cards row shows current snapshot per provider; endpoint type + region + 24h/7d controls on the compare page; provider add/remove via pill UI on the compare page itself.
+- 2026-05-27 · M4-04 · API reference published as a dashboard page at /api (NavBar link added) plus a machine-readable OpenAPI 3.1 spec at docs/openapi.yaml; human-readable page covers all three public endpoints with parameter tables, field schemas, and annotated response examples; design follows the established design system.

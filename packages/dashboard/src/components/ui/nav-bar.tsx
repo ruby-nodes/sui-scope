@@ -7,6 +7,7 @@ const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: "/", label: "Leaderboard" },
   { href: "/compare", label: "Compare" },
   { href: "/methodology", label: "Methodology" },
+  { href: "/api", label: "API" },
 ];
 
 export function NavBar() {
