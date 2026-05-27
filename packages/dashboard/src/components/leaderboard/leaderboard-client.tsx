@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
+import { regionLabel } from "@/lib/mock-data";
 import type { EndpointType, ProviderMetrics } from "@/lib/mock-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -301,7 +302,7 @@ function FilterPills({
                 : "cursor-pointer rounded px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
             }
           >
-            {opt === "all" ? "All" : opt.toUpperCase()}
+            {opt === "all" ? "All" : regionLabel(opt)}
           </button>
         ))}
       </div>

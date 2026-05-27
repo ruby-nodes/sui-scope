@@ -25,8 +25,54 @@ export interface ProviderMetrics {
   error_rate: number | null;
 }
 
-export const KNOWN_REGIONS = ["iad", "fra"] as const;
+export const KNOWN_REGIONS = ["iad", "fra", "sin", "nrt", "lax"] as const;
 export type Region = (typeof KNOWN_REGIONS)[number];
+
+/** Maps Fly.io 3-letter region codes to human-readable city names. */
+const REGION_LABELS: Record<string, string> = {
+  ams: "Amsterdam",
+  arn: "Stockholm",
+  atl: "Atlanta",
+  bog: "Bogotá",
+  bom: "Mumbai",
+  bos: "Boston",
+  cdg: "Paris",
+  den: "Denver",
+  dfw: "Dallas",
+  ewr: "Secaucus",
+  fra: "Frankfurt",
+  gdl: "Guadalajara",
+  gig: "Rio de Janeiro",
+  gru: "São Paulo",
+  hkg: "Hong Kong",
+  iad: "Ashburn",
+  jnb: "Johannesburg",
+  lax: "Los Angeles",
+  lhr: "London",
+  mad: "Madrid",
+  mia: "Miami",
+  nrt: "Tokyo",
+  ord: "Chicago",
+  otp: "Bucharest",
+  phx: "Phoenix",
+  qro: "Querétaro",
+  scl: "Santiago",
+  sea: "Seattle",
+  sin: "Singapore",
+  sjc: "San Jose",
+  syd: "Sydney",
+  waw: "Warsaw",
+  yul: "Montreal",
+  yyz: "Toronto",
+};
+
+/**
+ * Returns a human-readable label for a Fly.io region code.
+ * Falls back to the uppercase code for any unrecognised value.
+ */
+export function regionLabel(code: string): string {
+  return REGION_LABELS[code.toLowerCase()] ?? code.toUpperCase();
+}
 
 export const MOCK_METRICS: ProviderMetrics[] = [
   // Mysten Labs — gRPC

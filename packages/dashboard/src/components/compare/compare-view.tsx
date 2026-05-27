@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import type { ApiProvider } from "@/lib/api-client";
+import { regionLabel } from "@/lib/mock-data";
 import type { ProviderMetrics, TimeSeriesMap } from "@/lib/mock-data";
 import { PROVIDER_PALETTE } from "./compare-charts";
 import type { CompareChartsProps } from "./compare-charts";
@@ -264,7 +265,7 @@ export function CompareView({
                         : "rounded px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
                     }
                   >
-                    {r.toUpperCase()}
+                    {regionLabel(r)}
                   </button>
                 ))}
               </div>
@@ -312,7 +313,7 @@ export function CompareView({
                   {row === undefined ? (
                     <p className="text-sm text-text-muted">
                       No data for {activeType.toUpperCase()} ·{" "}
-                      {activeRegion.toUpperCase()}
+                      {regionLabel(activeRegion)}
                     </p>
                   ) : (
                     <dl className="space-y-1.5 text-sm">

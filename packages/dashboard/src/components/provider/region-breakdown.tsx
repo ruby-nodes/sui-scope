@@ -1,5 +1,6 @@
 import { StatCard } from "@/components/ui";
 import type { Tier } from "@/components/ui";
+import { regionLabel } from "@/lib/mock-data";
 import type { ProviderMetrics } from "@/lib/mock-data";
 
 // ─── Tier helpers (same thresholds as the leaderboard) ────────────────────────
@@ -58,7 +59,7 @@ export function RegionBreakdown({ rows }: RegionBreakdownProps) {
               {typeRows.map((row) => (
                 <div key={`${type}-${row.region}`}>
                   <p className="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {row.region}
+                    {regionLabel(row.region)}
                   </p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                     <StatCard
