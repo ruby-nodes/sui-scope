@@ -26,10 +26,11 @@ pnpm turbo build
 
 ```
 probe (iad)  ──┐
-probe (fra)  ──┤──► POST /ingest  ──► suiscope-api (iad)  ──► suiscope-clickhouse (iad)
-               │                       https://suiscope-api.fly.dev
-               │
-               └── all traffic stays on Fly's private IPv6 network (.internal hostnames)
+probe (fra)  ──┤
+probe (sin)  ──┼──► POST /ingest  ──► suiscope-api (iad)  ──► suiscope-clickhouse (iad)
+probe (nrt)  ──┤                       https://suiscope-api.fly.dev
+probe (lax)  ──┘
+               all traffic stays on Fly's private IPv6 network (.internal hostnames)
 ```
 
 The three apps must be deployed **in order**: ClickHouse first, then the API, then the probes. The API and probes communicate with ClickHouse exclusively via Fly's private network — ClickHouse is never exposed publicly.
@@ -176,17 +177,30 @@ fly deploy --config fly/probes.fly.toml
 
 This creates one app machine in `iad` (primary region defined in `fly/probes.fly.toml`).
 
-### 3.4 Add a second region by cloning
+### 3.4 Add additional regions by cloning
 
 ```bash
-# Get the ID of the running app machine
+# Get the ID of a running app machine to use as the clone source
 fly machine list --app suiscope-probes
 
-# Clone it into Frankfurt
+# Clone into each target region
 fly machine clone <machine-id> --app suiscope-probes --region fra
+fly machine clone <machine-id> --app suiscope-probes --region sin
+fly machine clone <machine-id> --app suiscope-probes --region nrt
+fly machine clone <machine-id> --app suiscope-probes --region lax
 ```
 
 The cloned machine inherits all secrets and the same Docker image. No additional secret-setting is needed.
+
+**Live machine inventory (as of 2026-05-27):**
+
+| Machine ID | Name | Region | State |
+|---|---|---|---|
+| `d895de5b6250e8` | long-forest-7546 | iad | started |
+| `d8d1494f140768` | red-butterfly-6459 | fra | started |
+| `9080d706a54e78` | nameless-forest-747 | sin | started |
+| `0800e2db03e598` | long-sea-3081 | nrt | started |
+| `d8d2909b704308` | old-surf-286 | lax | started |
 
 > **If a cloned machine shows `stopped` immediately**, start it manually:
 > ```bash
@@ -211,6 +225,9 @@ Expected output (one row per active region):
 ```
 22    fra    2026-05-26 12:14:30    2026-05-26 12:15:30
 33    iad    2026-05-26 12:13:31    2026-05-26 12:15:31
+<N>   lax    ...
+<N>   nrt    ...
+<N>   sin    ...
 ```
 
 ### Environment variables reference
@@ -246,7 +263,9 @@ Each additional region requires one `fly machine clone` command:
 fly machine clone <existing-machine-id> --app suiscope-probes --region <region-code>
 ```
 
-Available Fly.io regions: `iad` (Virginia), `fra` (Frankfurt), `sin` (Singapore), `syd` (Sydney), `nrt` (Tokyo), `lax` (Los Angeles), and [more](https://fly.io/docs/reference/regions/).
+**Currently active regions:** `iad` (Virginia), `fra` (Frankfurt), `sin` (Singapore), `nrt` (Tokyo), `lax` (Los Angeles).
+
+Other available Fly.io regions: `syd` (Sydney), `ord` (Chicago), `ams` (Amsterdam), and [more](https://fly.io/docs/reference/regions/).
 
 No redeployment of ClickHouse or the API is needed — they are region-agnostic.
 

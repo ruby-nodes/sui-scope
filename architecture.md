@@ -5,7 +5,8 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Regional Probe Agents                      │
-│       us-east · eu-west · ap-singapore · (+ more in M4)        │
+│  us-east (iad) · eu-west (fra) · ap-singapore (sin) ·          │
+│  ap-northeast (nrt) · us-west (lax)                            │
 │   Stateless probe cycles — one cold connection per measurement  │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ HTTP POST  /ingest  (internal)

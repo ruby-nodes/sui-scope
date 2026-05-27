@@ -297,8 +297,8 @@ function FilterPills({
             }}
             className={
               selected === opt
-                ? "rounded px-3 py-1 text-xs font-medium text-accent bg-accent-dim"
-                : "rounded px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+                ? "cursor-pointer rounded px-3 py-1 text-xs font-medium text-accent bg-accent-dim"
+                : "cursor-pointer rounded px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
             }
           >
             {opt === "all" ? "All" : opt.toUpperCase()}

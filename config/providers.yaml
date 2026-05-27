@@ -26,3 +26,7 @@ providers:
     name: "01node"
     grpc: "sui.01.ro:443"
     graphql: "https://sui.01.ro/graphql"
+
+  - id: triton
+    name: "Triton One"
+    grpc: "sui-mainnet.nodeinfra.com:443"
