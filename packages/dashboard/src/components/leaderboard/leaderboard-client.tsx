@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
@@ -169,7 +169,7 @@ function sortRows(
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 
-const COLUMNS: Column<DisplayRow>[] = [
+const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "provider_name",
     header: "Provider",
@@ -321,6 +321,61 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // ── Compare selection state ────────────────────────────────────────────────
+  const [selectedProviders, setSelectedProviders] = useState(
+    () => new Set<string>(),
+  );
+
+  function toggleCompare(providerId: string): void {
+    setSelectedProviders((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) {
+        next.delete(providerId);
+      } else if (next.size < 4) {
+        next.add(providerId);
+      }
+      return next;
+    });
+  }
+
+  const compareHref = useMemo(() => {
+    const ids = [...selectedProviders];
+    if (ids.length < 2) return null;
+    const params = new URLSearchParams();
+    for (const id of ids) params.append("p", id);
+    return `/compare?${params.toString()}`;
+  }, [selectedProviders]);
+
+  // Checkbox column — depends on selectedProviders state.
+  const columns = useMemo<Column<DisplayRow>[]>(
+    () => [
+      {
+        key: "_compare",
+        header: "",
+        sortable: false,
+        align: "center",
+        render: (row) => {
+          const isSelected = selectedProviders.has(row.provider_id);
+          const atMax = selectedProviders.size >= 4 && !isSelected;
+          return (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              disabled={atMax}
+              onChange={() => {
+                toggleCompare(row.provider_id);
+              }}
+              className="cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label={`Compare ${row.provider_name}`}
+            />
+          );
+        },
+      },
+      ...METRIC_COLUMNS,
+    ],
+    [selectedProviders],
+  );
+
   // ── Read URL state ─────────────────────────────────────────────────────────
   const regionFilter = searchParams.get("region") ?? "all";
   const typeFilter = searchParams.get("type") ?? "all";
@@ -411,6 +466,14 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
             updateParams({ type: v });
           }}
         />
+        {compareHref !== null && (
+          <Link
+            href={compareHref}
+            className="ml-auto flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-bg-base transition-colors hover:opacity-90"
+          >
+            Compare ({selectedProviders.size}) →
+          </Link>
+        )}
       </div>
 
       {/* Table */}
@@ -421,7 +484,7 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
           </p>
         ) : (
           <DataTable
-            columns={COLUMNS}
+            columns={columns}
             rows={displayRows}
             rowKey={(row) => row.key}
             sortKey={sortKey}
