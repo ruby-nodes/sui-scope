@@ -6,6 +6,8 @@ import { useCallback, useMemo, useState } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
+import { EndpointBadge } from "@/components/ui/endpoint-badge";
+import { MatrixView } from "./matrix-view";
 import { regionLabel } from "@/lib/mock-data";
 import type { EndpointType, ProviderMetrics } from "@/lib/mock-data";
 
@@ -55,6 +57,17 @@ const TIER_COLOR: Record<Tier, string> = {
   poor: "text-tier-poor",
   unknown: "text-text-muted",
 };
+
+/** Bar fill colour for inline mini latency bars. */
+const TIER_BAR: Record<Tier, string> = {
+  good: "bg-tier-good",
+  degraded: "bg-tier-degraded",
+  poor: "bg-tier-poor",
+  unknown: "bg-tier-unknown",
+};
+
+/** Max latency used to scale mini bars (anything ≥ this is 100% wide). */
+const LATENCY_BAR_MAX_MS = 400;
 
 // ─── Tier helpers ─────────────────────────────────────────────────────────────
 
@@ -170,6 +183,28 @@ function sortRows(
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 
+/** Mini bar + coloured number for latency columns. */
+function LatencyCell({ value }: { value: number | null }) {
+  const tier = latencyTier(value);
+  const barPct =
+    value !== null ? Math.min(100, (value / LATENCY_BAR_MAX_MS) * 100) : 0;
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {value !== null && (
+        <div className="h-1.5 w-14 overflow-hidden rounded-full bg-bg-raised">
+          <div
+            className={`h-full rounded-full ${TIER_BAR[tier]}`}
+            style={{ width: `${barPct}%` }}
+          />
+        </div>
+      )}
+      <span className={`w-10 text-right font-mono text-sm ${TIER_COLOR[tier]}`}>
+        {fmtMs(value)}
+      </span>
+    </div>
+  );
+}
+
 const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "provider_name",
@@ -190,44 +225,28 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     header: "Type",
     sortable: false,
     align: "left",
-    render: (row) => (
-      <span className="rounded bg-bg-raised px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-text-secondary">
-        {row.endpoint_type}
-      </span>
-    ),
+    render: (row) => <EndpointBadge type={row.endpoint_type} />,
   },
   {
     key: "latency_p50",
     header: "p50 ms",
     sortable: true,
     align: "right",
-    render: (row) => (
-      <span className={`font-mono ${TIER_COLOR[latencyTier(row.latency_p50)]}`}>
-        {fmtMs(row.latency_p50)}
-      </span>
-    ),
+    render: (row) => <LatencyCell value={row.latency_p50} />,
   },
   {
     key: "latency_p90",
     header: "p90 ms",
     sortable: true,
     align: "right",
-    render: (row) => (
-      <span className={`font-mono ${TIER_COLOR[latencyTier(row.latency_p90)]}`}>
-        {fmtMs(row.latency_p90)}
-      </span>
-    ),
+    render: (row) => <LatencyCell value={row.latency_p90} />,
   },
   {
     key: "latency_p99",
     header: "p99 ms",
     sortable: true,
     align: "right",
-    render: (row) => (
-      <span className={`font-mono ${TIER_COLOR[latencyTier(row.latency_p99)]}`}>
-        {fmtMs(row.latency_p99)}
-      </span>
-    ),
+    render: (row) => <LatencyCell value={row.latency_p99} />,
   },
   {
     key: "freshness_avg",
@@ -322,6 +341,9 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // ── View toggle state ──────────────────────────────────────────────────────
+  const [view, setView] = useState<"table" | "matrix">("table");
+
   // ── Compare selection state ────────────────────────────────────────────────
   const [selectedProviders, setSelectedProviders] = useState(
     () => new Set<string>(),
@@ -347,33 +369,30 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
     return `/compare?${params.toString()}`;
   }, [selectedProviders]);
 
-  // Checkbox column — depends on selectedProviders state.
-  const columns = useMemo<Column<DisplayRow>[]>(
-    () => [
-      {
-        key: "_compare",
-        header: "",
-        sortable: false,
-        align: "center",
-        render: (row) => {
-          const isSelected = selectedProviders.has(row.provider_id);
-          const atMax = selectedProviders.size >= 4 && !isSelected;
-          return (
-            <input
-              type="checkbox"
-              checked={isSelected}
-              disabled={atMax}
-              onChange={() => {
-                toggleCompare(row.provider_id);
+  // Checkbox column — resolved at render time; rank added after displayRows.
+  const checkboxColumn = useMemo<Column<DisplayRow>>(
+    () => ({
+      key: "_compare",
+      header: "",
+      sortable: false,
+      align: "center",
+      render: (row) => {
+        const isSelected = selectedProviders.has(row.provider_id);
+        const atMax = selectedProviders.size >= 4 && !isSelected;
+        return (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            disabled={atMax}
+            onChange={() => {
+              toggleCompare(row.provider_id);
               }}
               className="cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-40"
               aria-label={`Compare ${row.provider_name}`}
             />
           );
         },
-      },
-      ...METRIC_COLUMNS,
-    ],
+      }),
     [selectedProviders],
   );
 
@@ -442,32 +461,99 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
     return sortRows(aggregate(filtered), sortKey, sortDir);
   }, [rows, regionFilter, typeFilter, sortKey, sortDir]);
 
+  // ── Rank map — O(1) rank lookup in column render ───────────────────────────
+  const rankMap = useMemo(
+    () => new Map(displayRows.map((row, i) => [row.key, i + 1])),
+    [displayRows],
+  );
+
+  // ── Final columns: rank + checkbox + metrics ───────────────────────────────
+  const columns = useMemo<Column<DisplayRow>[]>(
+    () => [
+      {
+        key: "_rank",
+        header: "#",
+        sortable: false,
+        align: "center",
+        render: (row) => {
+          const rank = rankMap.get(row.key) ?? 0;
+          const cls =
+            rank === 1
+              ? "text-rank-gold font-bold"
+              : rank === 2
+                ? "text-rank-silver font-semibold"
+                : rank === 3
+                  ? "text-rank-bronze font-semibold"
+                  : "text-text-muted";
+          return (
+            <span className={`font-mono text-xs ${cls}`}>{rank}</span>
+          );
+        },
+      },
+      checkboxColumn,
+      ...METRIC_COLUMNS,
+    ],
+    [rankMap, checkboxColumn],
+  );
+
   const regionOptions: readonly string[] = ["all", ...regions];
   const typeOptions: readonly string[] = ["all", "grpc", "graphql"];
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-3">
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-border bg-bg-surface px-4 py-3">
-        <FilterPills
-          label="Region"
-          options={regionOptions}
-          selected={regionFilter}
-          onSelect={(v) => {
-            updateParams({ region: v });
-          }}
-        />
-        <div className="hidden h-4 w-px bg-border sm:block" />
-        <FilterPills
-          label="Type"
-          options={typeOptions}
-          selected={typeFilter}
-          onSelect={(v) => {
-            updateParams({ type: v });
-          }}
-        />
-        {compareHref !== null && (
+      {/* View toggle + filter bar */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-bg-surface px-4 py-3">
+        {/* Table / Matrix tabs */}
+        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+          <button
+            type="button"
+            onClick={() => { setView("table"); }}
+            className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+              view === "table"
+                ? "bg-accent-dim text-accent"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Table
+          </button>
+          <button
+            type="button"
+            onClick={() => { setView("matrix"); }}
+            className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+              view === "matrix"
+                ? "bg-accent-dim text-accent"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Matrix
+          </button>
+        </div>
+
+        {view === "table" && (
+          <>
+            <div className="hidden h-4 w-px bg-border sm:block" />
+            <FilterPills
+              label="Region"
+              options={regionOptions}
+              selected={regionFilter}
+              onSelect={(v) => {
+                updateParams({ region: v });
+              }}
+            />
+            <div className="hidden h-4 w-px bg-border sm:block" />
+            <FilterPills
+              label="Type"
+              options={typeOptions}
+              selected={typeFilter}
+              onSelect={(v) => {
+                updateParams({ type: v });
+              }}
+            />
+          </>
+        )}
+
+        {compareHref !== null && view === "table" && (
           <Link
             href={compareHref}
             className="ml-auto flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-bg-base transition-colors hover:opacity-90"
@@ -477,23 +563,28 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border border-border bg-bg-surface">
-        {displayRows.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-text-muted">
-            No data for the selected filters.
-          </p>
-        ) : (
-          <DataTable
-            columns={columns}
-            rows={displayRows}
-            rowKey={(row) => row.key}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-        )}
-      </div>
+      {/* Table view */}
+      {view === "table" && (
+        <div className="overflow-hidden rounded-lg border border-border bg-bg-surface shadow-lg">
+          {displayRows.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-text-muted">
+              No data for the selected filters.
+            </p>
+          ) : (
+            <DataTable
+              columns={columns}
+              rows={displayRows}
+              rowKey={(row) => row.key}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Matrix heatmap view */}
+      {view === "matrix" && <MatrixView rows={rows} />}
     </div>
   );
 }

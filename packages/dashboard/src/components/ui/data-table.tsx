@@ -66,7 +66,7 @@ export function DataTable<T,>({
                       ? "text-center"
                       : "text-left",
                   col.sortable &&
-                    "cursor-pointer select-none hover:text-text-secondary",
+                    "cursor-pointer select-none hover:text-accent transition-colors",
                   sortKey === col.key && "text-accent",
                 )}
               >
@@ -84,7 +84,7 @@ export function DataTable<T,>({
           {rows.map((row) => (
             <tr
               key={rowKey(row)}
-              className="border-b border-border-subtle transition-colors hover:bg-bg-surface"
+              className="border-b border-border-subtle transition-colors hover:bg-bg-raised group"
             >
               {columns.map((col) => (
                 <td

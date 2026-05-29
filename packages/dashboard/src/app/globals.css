@@ -23,7 +23,19 @@
   /* ── Accent (Sui cyan) ───────────────────────────────────────────── */
   --color-accent: #4da2ff;
   --color-accent-hover: #6db8ff;
+  --color-accent-end: #38bdf8; /* gradient endpoint — sky blue */
   --color-accent-dim: #1a3a5c; /* tinted accent background */
+
+  /* ── Endpoint type colors ────────────────────────────────────────── */
+  --color-grpc: #a78bfa;    /* violet-400 — gRPC */
+  --color-grpc-bg: #2e1065; /* deep violet background */
+  --color-graphql: #4da2ff; /* Sui cyan — GraphQL */
+  --color-graphql-bg: #1a3a5c; /* deep cyan background */
+
+  /* ── Rank medal colors ───────────────────────────────────────────── */
+  --color-rank-gold: #fbbf24;   /* amber-400 */
+  --color-rank-silver: #d1d5db; /* gray-300 */
+  --color-rank-bronze: #fb923c; /* orange-400 */
 
   /* ── Metric tier foreground ──────────────────────────────────────── */
   --color-tier-good: #22c55e;
@@ -55,4 +67,41 @@
   html {
     color-scheme: dark;
   }
+
+  /*
+   * Periscope grid texture — faint cyan mesh lines on the page background.
+   * Applied via background-image so it layers over the bg-bg-base color.
+   */
+  body {
+    background-image:
+      linear-gradient(rgba(77, 162, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77, 162, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+/* ── Live pulse animation (navbar indicator) ─────────────────────────────── */
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0);
+  }
+}
+
+.animate-live-pulse {
+  animation: live-pulse 2.2s ease-in-out infinite;
+}
+
+/* ── Accent glow — e.g. selected row or highlighted card ─────────────────── */
+@keyframes accent-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(77, 162, 255, 0); }
+  50%       { box-shadow: 0 0 12px 2px rgba(77, 162, 255, 0.18); }
+}
+
+.glow-accent {
+  animation: accent-glow-pulse 3s ease-in-out infinite;
 }
