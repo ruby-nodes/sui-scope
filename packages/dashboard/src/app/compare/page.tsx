@@ -2,14 +2,9 @@ import type { Metadata } from "next";
 
 import { PageContainer, SectionHeading } from "@/components/ui";
 import { CompareView } from "@/components/compare/compare-view";
-import {
-  fetchMetrics,
-  fetchProviders,
-  fetchProviderTimeSeries,
-  mergeTimeSeriesMaps,
-} from "@/lib/api-client";
+import { fetchMetrics, fetchProviders } from "@/lib/api-client";
 import type { ApiProvider } from "@/lib/api-client";
-import type { ProviderMetrics, TimeSeriesMap } from "@/lib/mock-data";
+import type { ProviderMetrics } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Compare Providers",
@@ -31,31 +26,17 @@ export default async function ComparePage({ searchParams }: Props) {
 
   let allProviders: ApiProvider[];
   let rows: ProviderMetrics[];
-  let timeSeriesMap: TimeSeriesMap;
 
   try {
-    const [providers, allMetrics, tsMaps] = await Promise.all([
+    const [providers, allMetrics] = await Promise.all([
       fetchProviders(),
       fetchMetrics(),
-      Promise.all(
-        selectedIds.map((id) =>
-          Promise.all([
-            fetchProviderTimeSeries(id, "24h", "h24"),
-            fetchProviderTimeSeries(id, "7d", "d7"),
-          ]).then(([h24, d7]) => mergeTimeSeriesMaps(h24, d7)),
-        ),
-      ),
     ]);
     allProviders = providers;
     rows = allMetrics.filter((r) => selectedIds.includes(r.provider_id));
-    timeSeriesMap = tsMaps.reduce<TimeSeriesMap>(
-      (acc, m) => ({ ...acc, ...m }),
-      {},
-    );
   } catch {
     allProviders = [];
     rows = [];
-    timeSeriesMap = {};
   }
 
   return (
@@ -76,7 +57,6 @@ export default async function ComparePage({ searchParams }: Props) {
         allProviders={allProviders}
         selectedIds={selectedIds}
         rows={rows}
-        timeSeriesMap={timeSeriesMap}
       />
     </PageContainer>
   );

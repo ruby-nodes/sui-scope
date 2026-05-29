@@ -3,9 +3,10 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ApiProvider } from "@/lib/api-client";
+import { fetchProviderTimeSeries, mergeTimeSeriesMaps } from "@/lib/api-client";
 import { regionLabel } from "@/lib/mock-data";
 import type { ProviderMetrics, TimeSeriesMap } from "@/lib/mock-data";
 import { PROVIDER_PALETTE } from "./compare-charts";
@@ -60,17 +61,55 @@ export interface CompareViewProps {
   allProviders: ApiProvider[];
   selectedIds: string[];
   rows: ProviderMetrics[];
-  timeSeriesMap: TimeSeriesMap;
 }
 
 export function CompareView({
   allProviders,
   selectedIds,
   rows,
-  timeSeriesMap,
 }: CompareViewProps) {
   const router = useRouter();
   const pathname = usePathname();
+
+  // ── Client-side time-series fetching ──────────────────────────────────────
+
+  const [timeSeriesMap, setTimeSeriesMap] = useState<TimeSeriesMap>({});
+  const [loadingIds, setLoadingIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const fetchedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const idsToFetch = selectedIds.filter(
+      (id) => !fetchedRef.current.has(id),
+    );
+    if (idsToFetch.length === 0) return;
+
+    setLoadingIds((prev) => new Set([...prev, ...idsToFetch]));
+
+    for (const id of idsToFetch) {
+      fetchedRef.current.add(id);
+      void Promise.all([
+        fetchProviderTimeSeries(id, "24h", "h24"),
+        fetchProviderTimeSeries(id, "7d", "d7"),
+      ])
+        .then(([h24, d7]) => mergeTimeSeriesMaps(h24, d7))
+        .then((map) => {
+          setTimeSeriesMap((prev) => ({ ...prev, ...map }));
+        })
+        .catch(() => {
+          // Allow a retry on next render.
+          fetchedRef.current.delete(id);
+        })
+        .finally(() => {
+          setLoadingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        });
+    }
+  }, [selectedIds]);
 
   // ── Endpoint type + region state ──────────────────────────────────────────
 
@@ -376,6 +415,18 @@ export function CompareView({
           </div>
 
           {/* Time-series charts */}
+          {loadingIds.size > 0 && (
+            <p className="text-sm text-text-muted">
+              Loading chart data
+              {[...loadingIds]
+                .map(
+                  (id) =>
+                    allProviders.find((p) => p.id === id)?.name ?? id,
+                )
+                .join(", ")}
+              …
+            </p>
+          )}
           <CompareCharts
             providers={selectedProviders}
             timeSeriesMap={timeSeriesMap}

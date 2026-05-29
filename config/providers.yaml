@@ -15,7 +15,7 @@ providers:
   - id: mystenlab
     name: "Mysten Labs"
     grpc: "fullnode.mainnet.sui.io:443"
-    graphql: "https://sui-mainnet.mystenlabs.com/graphql"
+    graphql: "https://graphql.mainnet.sui.io/graphql"
 
   - id: ankr
     name: "Ankr"
