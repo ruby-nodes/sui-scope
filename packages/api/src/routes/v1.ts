@@ -7,7 +7,43 @@ import {
   queryLatestMetrics,
   queryProviderTimeSeries,
 } from "../queries.js";
-import type { TimeWindow } from "../queries.js";
+import type { MetricRow, TimeWindow } from "../queries.js";
+
+// ─── Simple in-memory cache ───────────────────────────────────────────────────
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+function makeCache<T>(ttlMs: number) {
+  let entry: CacheEntry<T> | null = null;
+  let inflight: Promise<T> | null = null;
+
+  return {
+    async get(fn: () => Promise<T>): Promise<T> {
+      const now = Date.now();
+      if (entry !== null && now < entry.expiresAt) return entry.value;
+
+      // Deduplicate concurrent requests: if a fetch is already in flight,
+      // wait for it rather than launching a second parallel query.
+      if (inflight !== null) return inflight;
+
+      inflight = fn().then((value) => {
+        entry = { value, expiresAt: Date.now() + ttlMs };
+        inflight = null;
+        return value;
+      }).catch((err) => {
+        inflight = null;
+        throw err;
+      });
+
+      return inflight;
+    },
+  };
+}
+
+const metricsCache = makeCache<MetricRow[]>(60_000); // 60 s TTL
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +71,7 @@ export function createV1Router(
   app.get("/metrics", async (c) => {
     let rows;
     try {
-      rows = await queryLatestMetrics(ch);
+      rows = await metricsCache.get(() => queryLatestMetrics(ch));
     } catch (err) {
       console.error("[api] /v1/metrics query error:", err);
       return c.json(

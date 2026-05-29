@@ -71,7 +71,7 @@ function apiBase(): string {
 export async function fetchProviders(): Promise<ApiProvider[]> {
   const res = await fetch(`${apiBase()}/v1/providers`, {
     next: { revalidate: 60 },
-    signal: AbortSignal.timeout(5_000),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
     throw new Error(`/v1/providers responded ${res.status}`);
@@ -87,7 +87,7 @@ export async function fetchProviders(): Promise<ApiProvider[]> {
 export async function fetchMetrics(): Promise<ProviderMetrics[]> {
   const res = await fetch(`${apiBase()}/v1/metrics`, {
     next: { revalidate: 60 },
-    signal: AbortSignal.timeout(5_000),
+    signal: AbortSignal.timeout(35_000),
   });
   if (!res.ok) {
     throw new Error(`/v1/metrics responded ${res.status}`);
@@ -111,7 +111,7 @@ export async function fetchProviderTimeSeries(
 ): Promise<TimeSeriesMap> {
   const res = await fetch(
     `${apiBase()}/v1/metrics/${encodeURIComponent(providerId)}?window=${window}`,
-    { next: { revalidate: 60 }, signal: AbortSignal.timeout(10_000) },
+    { next: { revalidate: 60 }, signal: AbortSignal.timeout(35_000) },
   );
   if (!res.ok) {
     // Return empty map on error — charts gracefully show no data.
