@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
 import { EndpointBadge } from "@/components/ui/endpoint-badge";
 import { MatrixView } from "./matrix-view";
-import { regionLabel } from "@/lib/mock-data";
-import type { EndpointType, ProviderMetrics } from "@/lib/mock-data";
+import { fetchMetrics } from "@/lib/api-client";
+import { KNOWN_REGIONS, regionLabel } from "@/lib/mock-data";
+import type { EndpointType, ProviderMetrics, Region } from "@/lib/mock-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -230,6 +231,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "latency_p50",
     header: "p50 ms",
+    tooltip: "Median cold-connection latency. Measured as: cold TCP connect + TLS handshake + request write + time-to-first-response-byte. DNS is pre-resolved and excluded. Lower is better.",
     sortable: true,
     align: "right",
     render: (row) => <LatencyCell value={row.latency_p50} />,
@@ -237,6 +239,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "latency_p90",
     header: "p90 ms",
+    tooltip: "90th-percentile cold-connection latency — only 1-in-10 requests are slower than this. Good indicator of tail behaviour under normal load.",
     sortable: true,
     align: "right",
     render: (row) => <LatencyCell value={row.latency_p90} />,
@@ -244,6 +247,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "latency_p99",
     header: "p99 ms",
+    tooltip: "99th-percentile cold-connection latency — worst-case tail. Useful for detecting occasional slow outliers that would hurt time-sensitive workloads.",
     sortable: true,
     align: "right",
     render: (row) => <LatencyCell value={row.latency_p99} />,
@@ -251,6 +255,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "freshness_avg",
     header: "Freshness ckpts",
+    tooltip: "How far behind the chain head this provider is, in checkpoints (chain_head − provider_latest). Averaged across regions. 0–2 = Good, 3–10 = Degraded, >10 = Poor. Lower is better.",
     sortable: true,
     align: "right",
     render: (row) => (
@@ -264,6 +269,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "uptime",
     header: "Uptime",
+    tooltip: "Fraction of probe cycles that returned a successful response over a 1-hour rolling window. Shows worst-case region when multiple regions are aggregated. ≥99.5% = Good, 98–99.5% = Degraded, <98% = Poor.",
     sortable: true,
     align: "right",
     render: (row) => (
@@ -275,6 +281,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "error_rate",
     header: "Error Rate",
+    tooltip: "Fraction of probe cycles that returned an error over a 5-minute rolling window. Shows worst-case region when aggregated. <0.5% = Good, 0.5–2% = Degraded, >2% = Poor.",
     sortable: true,
     align: "right",
     render: (row) => (
@@ -331,12 +338,30 @@ function FilterPills({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export interface LeaderboardClientProps {
-  rows: ProviderMetrics[];
-  regions: readonly string[];
-}
+export function LeaderboardClient() {
+  const [rows, setRows] = useState<ProviderMetrics[]>([]);
+  const [regions, setRegions] = useState<readonly Region[]>(KNOWN_REGIONS);
+  const [loading, setLoading] = useState(true);
 
-export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
+  useEffect(() => {
+    let cancelled = false;
+    fetchMetrics()
+      .then((data) => {
+        if (cancelled) return;
+        setRows(data);
+        const seen = [...new Set(data.map((m) => m.region))] as Region[];
+        setRegions(seen.length > 0 ? seen : KNOWN_REGIONS);
+      })
+      .catch(() => {
+        /* leave rows empty — table shows empty state */
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -500,6 +525,22 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
   const typeOptions: readonly string[] = ["all", "grpc", "graphql"];
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="h-12 animate-pulse rounded-md bg-bg-surface" />
+        <div className="overflow-hidden rounded-md border border-border bg-bg-surface">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-12 border-b border-border-subtle last:border-0 animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* View toggle + filter bar */}
@@ -585,6 +626,29 @@ export function LeaderboardClient({ rows, regions }: LeaderboardClientProps) {
 
       {/* Matrix heatmap view */}
       {view === "matrix" && <MatrixView rows={rows} />}
+
+      {/* Tier legend */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border-subtle bg-bg-surface/50 px-4 py-2.5 text-xs text-text-muted">
+        <span className="font-medium uppercase tracking-wider">Thresholds</span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-tier-good" />
+          <span className="text-tier-good font-medium">Good</span>
+          <span className="text-text-muted">· latency &lt;100 ms · freshness ≤2 ckpts · uptime ≥99.5% · error &lt;0.5%</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-tier-degraded" />
+          <span className="text-tier-degraded font-medium">Degraded</span>
+          <span className="text-text-muted">· latency 100–300 ms · freshness 3–10 · uptime 98–99.5% · error 0.5–2%</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-tier-poor" />
+          <span className="text-tier-poor font-medium">Poor</span>
+          <span className="text-text-muted">· latency &gt;300 ms · freshness &gt;10 · uptime &lt;98% · error &gt;2%</span>
+        </span>
+        <span className="ml-auto text-text-muted/70">
+          All latency: cold TCP+TLS · DNS excluded · 1 h uptime window · 5 min error window
+        </span>
+      </div>
     </div>
   );
 }

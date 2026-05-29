@@ -7,6 +7,8 @@ type SortDir = "asc" | "desc";
 export interface Column<T> {
   key: string;
   header: string;
+  /** Optional prose explanation shown in a hover tooltip on the column header. */
+  tooltip?: string;
   sortable?: boolean;
   align?: "left" | "right" | "center";
   render: (row: T) => ReactNode;
@@ -70,12 +72,33 @@ export function DataTable<T,>({
                   sortKey === col.key && "text-accent",
                 )}
               >
-                {col.header}
-                {sortKey === col.key && (
-                  <span aria-hidden="true" className="ml-1">
-                    {sortDir === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1">
+                  {col.header}
+                  {col.tooltip !== undefined && (
+                    <span className="group/tip relative inline-flex cursor-help">
+                      <svg
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                        className="h-3 w-3 shrink-0 text-text-muted/50 group-hover/tip:text-accent transition-colors"
+                        aria-hidden="true"
+                      >
+                        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                        <text x="8" y="12" textAnchor="middle" fontSize="9" fontWeight="bold" fill="currentColor">i</text>
+                      </svg>
+                      <span
+                        role="tooltip"
+                        className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-md border border-border bg-bg-raised px-3 py-2 text-left text-xs font-normal normal-case tracking-normal text-text-secondary shadow-xl group-hover/tip:visible"
+                      >
+                        {col.tooltip}
+                      </span>
+                    </span>
+                  )}
+                  {sortKey === col.key && (
+                    <span aria-hidden="true">
+                      {sortDir === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </span>
               </th>
             ))}
           </tr>
