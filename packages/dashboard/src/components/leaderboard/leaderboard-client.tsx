@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
@@ -342,6 +342,7 @@ export function LeaderboardClient() {
   const [rows, setRows] = useState<ProviderMetrics[]>([]);
   const [regions, setRegions] = useState<readonly Region[]>(KNOWN_REGIONS);
   const [loading, setLoading] = useState(true);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     let cancelled = false;
@@ -458,9 +459,11 @@ export function LeaderboardClient() {
       // dir without sort is meaningless
       if (!params.has("sort")) params.delete("dir");
       const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+      startTransition(() => {
+        router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+      });
     },
-    [searchParams, pathname, router],
+    [searchParams, pathname, router, startTransition],
   );
 
   const handleSort = useCallback(
@@ -628,26 +631,26 @@ export function LeaderboardClient() {
       {view === "matrix" && <MatrixView rows={rows} />}
 
       {/* Tier legend */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border-subtle bg-bg-surface/50 px-4 py-2.5 text-xs text-text-muted">
-        <span className="font-medium uppercase tracking-wider">Thresholds</span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-tier-good" />
-          <span className="text-tier-good font-medium">Good</span>
-          <span className="text-text-muted">· latency &lt;100 ms · freshness ≤2 ckpts · uptime ≥99.5% · error &lt;0.5%</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-tier-degraded" />
-          <span className="text-tier-degraded font-medium">Degraded</span>
-          <span className="text-text-muted">· latency 100–300 ms · freshness 3–10 · uptime 98–99.5% · error 0.5–2%</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-tier-poor" />
-          <span className="text-tier-poor font-medium">Poor</span>
-          <span className="text-text-muted">· latency &gt;300 ms · freshness &gt;10 · uptime &lt;98% · error &gt;2%</span>
-        </span>
-        <span className="ml-auto text-text-muted/70">
-          All latency: cold TCP+TLS · DNS excluded · 1 h uptime window · 5 min error window
-        </span>
+      <div className="rounded-lg border border-border-subtle bg-bg-surface/50 px-4 py-2.5 text-xs text-text-muted">
+        <p className="mb-2 font-medium uppercase tracking-wider">Thresholds</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-tier-good" />
+            <span className="text-tier-good font-medium">Good</span>
+            <span className="text-text-muted">· latency &lt;100 ms · freshness ≤2 ckpts · uptime ≥99.5% · error &lt;0.5%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-tier-degraded" />
+            <span className="text-tier-degraded font-medium">Degraded</span>
+            <span className="text-text-muted">· latency 100–300 ms · freshness 3–10 · uptime 98–99.5% · error 0.5–2%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-tier-poor" />
+            <span className="text-tier-poor font-medium">Poor</span>
+            <span className="text-text-muted">· latency &gt;300 ms · freshness &gt;10 · uptime &lt;98% · error &gt;2%</span>
+          </div>
+          <p className="text-text-muted/70">All latency: cold TCP+TLS · DNS excluded · 1 h uptime window · 5 min error window</p>
+        </div>
       </div>
 
       {/* Metric glossary */}
