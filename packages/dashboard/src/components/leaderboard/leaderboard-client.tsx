@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
@@ -342,7 +342,6 @@ export function LeaderboardClient() {
   const [rows, setRows] = useState<ProviderMetrics[]>([]);
   const [regions, setRegions] = useState<readonly Region[]>(KNOWN_REGIONS);
   const [loading, setLoading] = useState(true);
-  const [, startTransition] = useTransition();
 
   useEffect(() => {
     let cancelled = false;
@@ -422,59 +421,45 @@ export function LeaderboardClient() {
     [selectedProviders],
   );
 
-  // ── Read URL state ─────────────────────────────────────────────────────────
-  const regionFilter = searchParams.get("region") ?? "all";
-  const typeFilter = searchParams.get("type") ?? "all";
+  // ── Filter/sort state — local, initialized from URL ───────────────────────
+  const [regionFilter, setRegionFilter] = useState<string>(
+    () => searchParams.get("region") ?? "all",
+  );
+  const [typeFilter, setTypeFilter] = useState<string>(
+    () => searchParams.get("type") ?? "all",
+  );
+  const [sortKey, setSortKey] = useState<SortKey>(() => {
+    const raw = searchParams.get("sort");
+    return raw !== null && VALID_SORT_KEYS.has(raw) ? (raw as SortKey) : DEFAULT_SORT;
+  });
+  const [sortDir, setSortDir] = useState<SortDir>(
+    () => (searchParams.get("dir") === "desc" ? "desc" : DEFAULT_DIR),
+  );
 
-  const rawSort = searchParams.get("sort");
-  const sortKey: SortKey =
-    rawSort !== null && VALID_SORT_KEYS.has(rawSort)
-      ? (rawSort as SortKey)
-      : DEFAULT_SORT;
-
-  const sortDir: SortDir =
-    searchParams.get("dir") === "desc" ? "desc" : DEFAULT_DIR;
-
-  // ── Write URL state ────────────────────────────────────────────────────────
-
-  /**
-   * Merge `patch` into the current search params, then clean canonical
-   * defaults so stable states always produce the same URL.
-   */
-  const updateParams = useCallback(
-    (patch: Record<string, string>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      for (const [k, v] of Object.entries(patch)) {
-        params.set(k, v);
-      }
-      // Remove defaults for a canonical URL
-      if (params.get("region") === "all") params.delete("region");
-      if (params.get("type") === "all") params.delete("type");
-      // dir=asc is implicit
-      if (params.get("dir") === DEFAULT_DIR) params.delete("dir");
-      // If no dir, no separate sort needed for the default column
-      if (params.get("sort") === DEFAULT_SORT && !params.has("dir")) {
-        params.delete("sort");
-      }
-      // dir without sort is meaningless
-      if (!params.has("sort")) params.delete("dir");
+  // ── Sync current filter/sort state back to URL (for sharing/bookmarking) ──
+  const pushUrl = useCallback(
+    (region: string, type: string, sort: SortKey, dir: SortDir) => {
+      const params = new URLSearchParams();
+      if (region !== "all") params.set("region", region);
+      if (type !== "all") params.set("type", type);
+      if (sort !== DEFAULT_SORT || dir !== DEFAULT_DIR) params.set("sort", sort);
+      if (dir !== DEFAULT_DIR) params.set("dir", dir);
       const qs = params.toString();
-      startTransition(() => {
-        router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
-      });
+      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
     },
-    [searchParams, pathname, router, startTransition],
+    [pathname, router],
   );
 
   const handleSort = useCallback(
     (key: string) => {
       if (!VALID_SORT_KEYS.has(key)) return;
       const k = key as SortKey;
-      const newDir: SortDir =
-        k === sortKey && sortDir === "asc" ? "desc" : "asc";
-      updateParams({ sort: k, dir: newDir });
+      const newDir: SortDir = k === sortKey && sortDir === "asc" ? "desc" : "asc";
+      setSortKey(k);
+      setSortDir(newDir);
+      pushUrl(regionFilter, typeFilter, k, newDir);
     },
-    [sortKey, sortDir, updateParams],
+    [sortKey, sortDir, regionFilter, typeFilter, pushUrl],
   );
 
   // ── Derive display rows ────────────────────────────────────────────────────
@@ -566,7 +551,8 @@ export function LeaderboardClient() {
               options={regionOptions}
               selected={regionFilter}
               onSelect={(v) => {
-                updateParams({ region: v });
+                setRegionFilter(v);
+                pushUrl(v, typeFilter, sortKey, sortDir);
               }}
             />
             <div className="hidden h-4 w-px bg-border sm:block" />
@@ -575,7 +561,8 @@ export function LeaderboardClient() {
               options={typeOptions}
               selected={typeFilter}
               onSelect={(v) => {
-                updateParams({ type: v });
+                setTypeFilter(v);
+                pushUrl(regionFilter, v, sortKey, sortDir);
               }}
             />
           </>
