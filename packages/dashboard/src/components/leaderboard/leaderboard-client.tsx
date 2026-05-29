@@ -649,6 +649,37 @@ export function LeaderboardClient() {
           All latency: cold TCP+TLS · DNS excluded · 1 h uptime window · 5 min error window
         </span>
       </div>
+
+      {/* Metric glossary */}
+      <div className="rounded-lg border border-border-subtle bg-bg-surface/50 px-4 py-3 text-xs text-text-muted">
+        <p className="mb-2 font-medium uppercase tracking-wider">Metric definitions</p>
+        <dl className="space-y-1.5">
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">p50 ms</dt>
+            <dd>Median cold-connection latency — half of all probe cycles completed faster than this. Measured as: cold TCP connect + TLS handshake + request write + time-to-first-response-byte. DNS is pre-resolved and excluded.</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">p90 ms</dt>
+            <dd>90th-percentile latency — only 1-in-10 probe cycles were slower. A good indicator of tail behaviour under normal load. Same measurement method as p50.</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">p99 ms</dt>
+            <dd>99th-percentile latency — worst-case tail; 1-in-100 probe cycles were slower. Useful for detecting occasional slow outliers that would hurt time-sensitive workloads.</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">Freshness ckpts</dt>
+            <dd>How many checkpoints behind the chain head this provider is (<code className="font-mono">chain_head − provider_latest</code>). Averaged across regions over the last hour. 0 means perfectly in sync. Lower is better.</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">Uptime</dt>
+            <dd>Fraction of probe cycles that received a valid response, over a 1-hour rolling window. When multiple regions are aggregated, the worst-case region is shown.</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-36 shrink-0 font-medium text-text-secondary">Error Rate</dt>
+            <dd>Fraction of probe cycles that returned an error or timed out, over a 5-minute rolling window. When multiple regions are aggregated, the worst-case region is shown. Lower is better.</dd>
+          </div>
+        </dl>
+      </div>
     </div>
   );
 }
