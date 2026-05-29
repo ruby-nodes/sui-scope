@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 
 import { createClickHouseClient } from "./db/client.js";
@@ -52,6 +53,9 @@ export function createApp(
   const app = new Hono();
   app.get("/health", (c) => c.json({ ok: true }));
   app.post("/ingest", (c) => handleIngest(c, ch, ingestSecret));
+
+  // CORS — allow any browser origin to read public /v1/* endpoints
+  app.use("/v1/*", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"] }));
 
   // Public read API — rate-limited
   app.use("/v1/*", v1RateLimiter);
