@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import type { EndpointType, ProviderMetrics } from "@/lib/mock-data";
+import type { ProviderMetrics } from "@/lib/mock-data";
 import type { Tier } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
         graphql: [],
       });
     }
-    grouped.get(r.provider_id)![r.endpoint_type as EndpointType].push(r);
+    grouped.get(r.provider_id)![r.endpoint_type].push(r);
   }
 
   return Array.from(grouped.entries()).map(([id, g]) => {
