@@ -53,7 +53,7 @@ ClickHouse. Append-only writes, columnar storage, MergeTree engine, and native r
 
 **Consequences:**  
 - All writes are inserts — no updates, no deletes
-- Pre-aggregate common views (p50/p90/p99, error rate, uptime) as materialized views
+- Queries scan the raw `measurements` table directly with rolling-window `WHERE` clauses; no materialized view layer (a `measurements_1m` + `measurements_mv` pre-aggregation was removed after causing OOM on the 2 GB ClickHouse machine due to `quantileTDigest` state overhead)
 - MVP can run on a single Fly.io Machine; scale vertically first
 
 ---
