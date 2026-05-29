@@ -84,24 +84,6 @@ interface CombinedMetricRow {
   freshness_avg: number | null;
 }
 
-interface LatencySeriesRow {
-  bucket: string;
-  region: string;
-  endpoint_type: string;
-  latency_p50: number | null;
-  latency_p90: number | null;
-  latency_p99: number | null;
-  total_count: string;
-  success_count: string;
-}
-
-interface FreshnessSeriesRow {
-  bucket: string;
-  region: string;
-  endpoint_type: string;
-  freshness_avg: number;
-}
-
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 function seriesKey(region: string, endpoint_type: string): string {

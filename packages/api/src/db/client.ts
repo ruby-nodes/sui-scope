@@ -20,6 +20,7 @@ export function createClickHouseClient(
     database: env.CLICKHOUSE_DATABASE,
     username: env.CLICKHOUSE_USERNAME,
     password: env.CLICKHOUSE_PASSWORD,
+    request_timeout: 60_000, // 60 s — cold queries post-restart can take ~20–30 s
   });
 }
 
