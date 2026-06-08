@@ -614,18 +614,15 @@ export function LeaderboardClient() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-tier-good" />
-            <span className="text-tier-good font-medium">Good</span>
-            <span className="text-text-muted">· latency &lt;100 ms · freshness ≤2 ckpts · uptime ≥99.5% · error &lt;0.5%</span>
+            <span className="text-text-muted">latency &lt;100 ms · freshness ≤2 ckpts · uptime ≥99.5% · error &lt;0.5%</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-tier-degraded" />
-            <span className="text-tier-degraded font-medium">Degraded</span>
-            <span className="text-text-muted">· latency 100–300 ms · freshness 3–10 · uptime 98–99.5% · error 0.5–2%</span>
+            <span className="text-text-muted">latency 100–300 ms · freshness 3–10 · uptime 98–99.5% · error 0.5–2%</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-tier-poor" />
-            <span className="text-tier-poor font-medium">Poor</span>
-            <span className="text-text-muted">· latency &gt;300 ms · freshness &gt;10 · uptime &lt;98% · error &gt;2%</span>
+            <span className="text-text-muted">latency &gt;300 ms · freshness &gt;10 · uptime &lt;98% · error &gt;2%</span>
           </div>
           <p className="text-text-muted/70">All latency: cold TCP+TLS · DNS excluded · 1 h uptime window · 5 min error window</p>
         </div>
