@@ -17,6 +17,13 @@ primary_region = "iad"
 #   INGEST_URL     = "http://suiscope-api.internal:3000/ingest"
 #   INGEST_SECRET  = "<shared secret matching suiscope-api INGEST_SECRET>"
 
+# Probe daemons are long-running workers with no inbound HTTP service.
+# Always restart the process if it exits unexpectedly (e.g. crash, OOM, or a
+# deploy that stops machines without immediately replacing them).
+[[restart]]
+  policy     = "always"
+  max_retries = 10
+
 [[vm]]
   memory   = "256mb"
   cpu_kind = "shared"
