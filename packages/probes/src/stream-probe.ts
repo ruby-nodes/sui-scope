@@ -221,7 +221,11 @@ export function startStreamProbe(
       creds,
       channelOptions,
     );
-    const call = client.subscribeCheckpoints({}, new grpc.Metadata(), {});
+    const metadata = new grpc.Metadata();
+    if (provider.token != null) {
+      metadata.set(provider.token.header, provider.token.value);
+    }
+    const call = client.subscribeCheckpoints({}, metadata, {});
 
     activeClient = client;
     activeCall = call;

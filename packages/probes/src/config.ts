@@ -29,6 +29,20 @@ const ProviderEntrySchema = z
     /** Name of an env var holding the GraphQL full URL for this provider (private endpoint). */
     graphql_env: z.string().min(1).optional(),
     /**
+     * Header/metadata key name for the gRPC auth token (e.g. "x-token", "authorization").
+     * Must be paired with grpc_token_env.
+     */
+    grpc_token_header: z.string().min(1).optional(),
+    /** Name of the env var holding the gRPC auth token value. Must be paired with grpc_token_header. */
+    grpc_token_env: z.string().min(1).optional(),
+    /**
+     * HTTP header name for the GraphQL auth token (e.g. "Authorization", "x-api-key").
+     * Must be paired with graphql_token_env.
+     */
+    graphql_token_header: z.string().min(1).optional(),
+    /** Name of the env var holding the GraphQL auth token value. Must be paired with graphql_token_header. */
+    graphql_token_env: z.string().min(1).optional(),
+    /**
      * Whether this provider's endpoint URL is publicly accessible without auth.
      * Defaults to true. Set to false for providers whose URL contains an embedded API key.
      * Metrics are always published; only the URL is withheld when public is false.
@@ -44,6 +58,20 @@ const ProviderEntrySchema = z
     {
       message:
         "Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env",
+    },
+  )
+  .refine(
+    (data) =>
+      (data.grpc_token_header == null) === (data.grpc_token_env == null),
+    {
+      message: "grpc_token_header and grpc_token_env must both be set or both be absent",
+    },
+  )
+  .refine(
+    (data) =>
+      (data.graphql_token_header == null) === (data.graphql_token_env == null),
+    {
+      message: "graphql_token_header and graphql_token_env must both be set or both be absent",
     },
   );
 
@@ -79,6 +107,22 @@ export function loadProviders(
   for (const entry of parsed.providers) {
     const isPublic = entry.public;
 
+    // ── Resolve token helper ─────────────────────────────────────────────────
+    function resolveToken(
+      header: string | undefined,
+      envVarName: string | undefined,
+      label: string,
+    ): { header: string; value: string } | undefined {
+      if (envVarName == null) return undefined;
+      const val = env[envVarName];
+      if (!val) {
+        throw new Error(
+          `Provider "${entry.id}": env var "${envVarName}" (${label}) is not set`,
+        );
+      }
+      return { header: header!, value: val };
+    }
+
     // ── gRPC endpoint ────────────────────────────────────────────────────────
     let grpcEndpoint = entry.grpc;
     if (entry.grpc_env != null) {
@@ -91,7 +135,8 @@ export function loadProviders(
       grpcEndpoint = val;
     }
     if (grpcEndpoint != null) {
-      grpc.push({ id: entry.id, endpoint: grpcEndpoint, isPublic });
+      const token = resolveToken(entry.grpc_token_header, entry.grpc_token_env, "grpc_token_env");
+      grpc.push({ id: entry.id, endpoint: grpcEndpoint, isPublic, ...(token ? { token } : {}) });
     }
 
     // ── GraphQL endpoint ─────────────────────────────────────────────────────
@@ -106,7 +151,8 @@ export function loadProviders(
       graphqlEndpoint = val;
     }
     if (graphqlEndpoint != null) {
-      graphql.push({ id: entry.id, endpoint: graphqlEndpoint, isPublic });
+      const token = resolveToken(entry.graphql_token_header, entry.graphql_token_env, "graphql_token_env");
+      graphql.push({ id: entry.id, endpoint: graphqlEndpoint, isPublic, ...(token ? { token } : {}) });
     }
   }
 

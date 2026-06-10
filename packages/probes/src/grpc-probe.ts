@@ -16,7 +16,7 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import * as nodePath from "node:path";
 
-import type { GrpcProviderConfig, MeasurementEvent } from "./types.js";
+import type { GrpcProviderConfig, MeasurementEvent, ProviderToken } from "./types.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -132,6 +132,7 @@ async function callGetServiceInfo(
   endpoint: string,
   probeVersion: string,
   credentials: grpc.ChannelCredentials,
+  token?: ProviderToken,
 ): Promise<{ latencyMs: number; checkpointHeight: number }> {
   const { host, port } = parseEndpoint(endpoint);
 
@@ -159,9 +160,13 @@ async function callGetServiceInfo(
     const response = await new Promise<GetServiceInfoResponse>(
       (resolve, reject) => {
         const deadline = new Date(Date.now() + PROBE_TIMEOUT_MS);
+        const metadata = new grpc.Metadata();
+        if (token != null) {
+          metadata.set(token.header, token.value);
+        }
         client.getServiceInfo(
           {},
-          new grpc.Metadata(),
+          metadata,
           { deadline },
           (err, value) => {
             if (err != null) {
@@ -235,6 +240,7 @@ export async function probeGrpc(
       provider.endpoint,
       probeVersion,
       credentials,
+      provider.token,
     );
 
     // Clamp to 0: if provider is somehow ahead of the reference, report 0.

@@ -15,14 +15,25 @@
 #   grpc_env:    Optional. Name of the env var holding the gRPC "host:port" for this provider.
 #   graphql_env: Optional. Name of the env var holding the GraphQL full URL for this provider.
 #
+#   Auth token fields (for providers that require a token header on every request):
+#   grpc_token_header:    Optional. Header/metadata key name for gRPC auth (e.g. "x-token").
+#                         Must be paired with grpc_token_env.
+#   grpc_token_env:       Optional. Name of the env var holding the gRPC token value.
+#                         Must be paired with grpc_token_header.
+#   graphql_token_header: Optional. HTTP header name for GraphQL auth (e.g. "Authorization").
+#                         Must be paired with graphql_token_env.
+#   graphql_token_env:    Optional. Name of the env var holding the GraphQL token value.
+#                         Must be paired with graphql_token_header.
+#
 # Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env.
 # Mixing public and private fields on the same provider is allowed (e.g. public grpc + private graphql_env).
 #
 # For private providers (public: false):
 #   - Metrics are still published on the leaderboard.
 #   - The endpoint URL is NOT exposed in the public API or dashboard.
-#   - Set the corresponding Fly secret before deploying probes:
+#   - Set the corresponding Fly secrets before deploying probes:
 #       fly secrets set MY_PROVIDER_GRAPHQL_URL="https://..." -a sui-scope-probes
+#       fly secrets set MY_PROVIDER_GRAPHQL_TOKEN="Bearer abc123" -a sui-scope-probes
 
 providers:
   - id: mystenlab
@@ -43,3 +54,11 @@ providers:
   - id: triton
     name: "Triton One"
     grpc: "sui-mainnet.nodeinfra.com:443"
+
+  - id: blockpi
+    name: "BlockPI"
+    public: false
+    grpc_env: "BLOCKPI_GRPC_URL"
+    graphql_env: "BLOCKPI_GRAPHQL_URL"
+    grpc_token_header: "x-token"
+    grpc_token_env: "BLOCKPI_GRPC_TOKEN"

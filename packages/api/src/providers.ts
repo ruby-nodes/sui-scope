@@ -16,6 +16,14 @@ const ProviderSchema = z.object({
   grpc_env: z.string().optional(),
   /** Name of the env var holding a private GraphQL endpoint (never exposed via the API). */
   graphql_env: z.string().optional(),
+  /** gRPC token header name (safe to store; value lives in an env var). */
+  grpc_token_header: z.string().optional(),
+  /** Name of the env var holding the gRPC token value (never exposed via the API). */
+  grpc_token_env: z.string().optional(),
+  /** GraphQL token header name (safe to store; value lives in an env var). */
+  graphql_token_header: z.string().optional(),
+  /** Name of the env var holding the GraphQL token value (never exposed via the API). */
+  graphql_token_env: z.string().optional(),
   /**
    * Whether this provider's endpoint URL is freely accessible without auth.
    * Defaults to true. When false the endpoint URL is withheld from API responses.

@@ -16,7 +16,7 @@ import * as https from "node:https";
 import { performance } from "node:perf_hooks";
 import { URL } from "node:url";
 
-import type { GraphQLProviderConfig, MeasurementEvent } from "./types.js";
+import type { GraphQLProviderConfig, MeasurementEvent, ProviderToken } from "./types.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,7 @@ function parseEndpointUrl(endpoint: string): {
 async function callCheckpointQuery(
   endpoint: string,
   probeVersion: string,
+  token?: ProviderToken,
 ): Promise<{ latencyMs: number; sequenceNumber: number }> {
   const { protocol, hostname, port, path } = parseEndpointUrl(endpoint);
 
@@ -93,17 +94,22 @@ async function callCheckpointQuery(
   // `servername` sets SNI for TLS certificate verification against the
   // original hostname when connecting via a pre-resolved IP address.
   // It is silently ignored by http.request.
+  const headers: Record<string, string | number> = {
+    "Content-Type": "application/json",
+    "Content-Length": GRAPHQL_QUERY_BODY.byteLength,
+    "User-Agent": `SuiScope-Probe/${probeVersion}`,
+    Host: hostname, // virtual-host header (required when connecting via IP)
+  };
+  if (token != null) {
+    headers[token.header] = token.value;
+  }
+
   const requestOptions: https.RequestOptions = {
     hostname: address, // pre-resolved IP
     port,
     path,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Length": GRAPHQL_QUERY_BODY.byteLength,
-      "User-Agent": `SuiScope-Probe/${probeVersion}`,
-      Host: hostname, // virtual-host header (required when connecting via IP)
-    },
+    headers,
     agent: false, // cold connection: new TCP socket per request, never reused
     servername: hostname, // SNI — used by https.request, ignored by http.request
   };
@@ -228,6 +234,7 @@ export async function probeGraphQL(
     const { latencyMs, sequenceNumber } = await callCheckpointQuery(
       provider.endpoint,
       probeVersion,
+      provider.token,
     );
 
     // Clamp to 0: if provider is somehow ahead of the reference, report 0.

@@ -77,11 +77,19 @@ export async function handleIngest(
   // ── Write to ClickHouse ───────────────────────────────────────────────────
   // timestamp is unix ms; DateTime64(3) stores millisecond-precision unix epoch,
   // so the raw number maps directly to the column scale (1 unit = 1 ms).
-  await ch.insert({
-    table: "measurements",
-    values: [result.data as Record<string, unknown>],
-    format: "JSONEachRow",
-  });
+  try {
+    await ch.insert({
+      table: "measurements",
+      values: [result.data as Record<string, unknown>],
+      format: "JSONEachRow",
+    });
+  } catch (err) {
+    console.error("[ingest] ClickHouse insert failed:", err);
+    return c.json(
+      { code: "internal_error", message: "Failed to write measurement" },
+      503,
+    );
+  }
 
   return c.json({ ok: true }, 202);
 }

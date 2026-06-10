@@ -19,12 +19,22 @@ export type MeasurementEvent = {
   timestamp: number; // unix ms
 };
 
+/** Auth token to attach to every request for this provider. */
+export type ProviderToken = {
+  /** HTTP header name (GraphQL) or gRPC metadata key to send the token under. */
+  header: string;
+  /** The token value, resolved at startup from an env var. */
+  value: string;
+};
+
 /** Configuration for a single gRPC provider endpoint. */
 export type GrpcProviderConfig = {
   id: string;
   endpoint: string; // "host:port", e.g. "fullnode.mainnet.sui.io:443"
   /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
   isPublic?: boolean;
+  /** If set, attach this token as gRPC call metadata on every request. */
+  token?: ProviderToken;
 };
 
 /** Configuration for a single GraphQL provider endpoint. */
@@ -33,4 +43,6 @@ export type GraphQLProviderConfig = {
   endpoint: string; // full URL, e.g. "https://sui-mainnet.mystenlabs.com/graphql"
   /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
   isPublic?: boolean;
+  /** If set, attach this token as an HTTP header on every request. */
+  token?: ProviderToken;
 };

@@ -232,6 +232,109 @@ providers:
     expect(result.grpc[0]?.isPublic).toBe(true);
   });
 
+  it("resolves grpc token from env and attaches it to the config", () => {
+    const filePath = writeYaml(
+      "grpc-token.yaml",
+      `
+providers:
+  - id: tokened-grpc
+    name: "Tokened gRPC"
+    grpc: "grpc.example.com:443"
+    grpc_token_header: "x-token"
+    grpc_token_env: MY_GRPC_TOKEN
+    public: false
+`,
+    );
+
+    const result = loadProviders(filePath, { MY_GRPC_TOKEN: "secret-grpc-value" });
+
+    expect(result.grpc[0]?.token).toEqual({ header: "x-token", value: "secret-grpc-value" });
+  });
+
+  it("resolves graphql token from env and attaches it to the config", () => {
+    const filePath = writeYaml(
+      "gql-token.yaml",
+      `
+providers:
+  - id: tokened-gql
+    name: "Tokened GraphQL"
+    graphql: "https://gql.example.com/graphql"
+    graphql_token_header: "Authorization"
+    graphql_token_env: MY_GQL_TOKEN
+    public: false
+`,
+    );
+
+    const result = loadProviders(filePath, { MY_GQL_TOKEN: "Bearer xyz" });
+
+    expect(result.graphql[0]?.token).toEqual({ header: "Authorization", value: "Bearer xyz" });
+  });
+
+  it("throws when grpc_token_env is set but the env var is missing", () => {
+    const filePath = writeYaml(
+      "missing-grpc-token.yaml",
+      `
+providers:
+  - id: tok
+    name: "Tok"
+    grpc: "grpc.example.com:443"
+    grpc_token_header: "x-token"
+    grpc_token_env: MISSING_GRPC_TOKEN
+    public: false
+`,
+    );
+
+    expect(() => loadProviders(filePath, {})).toThrow(/MISSING_GRPC_TOKEN/);
+  });
+
+  it("throws when graphql_token_env is set but the env var is missing", () => {
+    const filePath = writeYaml(
+      "missing-gql-token.yaml",
+      `
+providers:
+  - id: tok
+    name: "Tok"
+    graphql: "https://gql.example.com/graphql"
+    graphql_token_header: "Authorization"
+    graphql_token_env: MISSING_GQL_TOKEN
+    public: false
+`,
+    );
+
+    expect(() => loadProviders(filePath, {})).toThrow(/MISSING_GQL_TOKEN/);
+  });
+
+  it("throws when grpc_token_header is set without grpc_token_env", () => {
+    const filePath = writeYaml(
+      "half-grpc-token.yaml",
+      `
+providers:
+  - id: bad
+    name: "Bad"
+    grpc: "grpc.example.com:443"
+    grpc_token_header: "x-token"
+`,
+    );
+
+    expect(() => loadProviders(filePath, {})).toThrow();
+  });
+
+  it("leaves token undefined for providers with no token fields", () => {
+    const filePath = writeYaml(
+      "no-token.yaml",
+      `
+providers:
+  - id: plain
+    name: "Plain"
+    grpc: "plain.example.com:443"
+`,
+    );
+
+    const result = loadProviders(filePath);
+
+    expect(result.grpc[0]?.token).toBeUndefined();
+  });
+
   it("throws when providers list is empty", () => {
     const filePath = writeYaml(
       "empty.yaml",
