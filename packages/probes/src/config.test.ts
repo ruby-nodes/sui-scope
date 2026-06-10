@@ -45,10 +45,10 @@ providers:
     const result = loadProviders(filePath);
 
     expect(result.grpc).toEqual([
-      { id: "foo", endpoint: "foo.example.com:443" },
+      { id: "foo", endpoint: "foo.example.com:443", isPublic: true },
     ]);
     expect(result.graphql).toEqual([
-      { id: "foo", endpoint: "https://foo.example.com/graphql" },
+      { id: "foo", endpoint: "https://foo.example.com/graphql", isPublic: true },
     ]);
   });
 
@@ -121,6 +121,115 @@ providers:
     );
 
     expect(() => loadProviders(filePath)).toThrow();
+  });
+
+  it("resolves grpc_env to the endpoint from env", () => {
+    const filePath = writeYaml(
+      "grpc-env.yaml",
+      `
+providers:
+  - id: private-grpc
+    name: "Private gRPC"
+    grpc_env: MY_GRPC_ENDPOINT
+    public: false
+`,
+    );
+
+    const result = loadProviders(filePath, { MY_GRPC_ENDPOINT: "private.example.com:443" });
+
+    expect(result.grpc).toEqual([
+      { id: "private-grpc", endpoint: "private.example.com:443", isPublic: false },
+    ]);
+    expect(result.graphql).toHaveLength(0);
+  });
+
+  it("resolves graphql_env to the endpoint from env", () => {
+    const filePath = writeYaml(
+      "gql-env.yaml",
+      `
+providers:
+  - id: private-gql
+    name: "Private GraphQL"
+    graphql_env: MY_GQL_URL
+    public: false
+`,
+    );
+
+    const result = loadProviders(filePath, { MY_GQL_URL: "https://private.example.com/graphql" });
+
+    expect(result.graphql).toEqual([
+      { id: "private-gql", endpoint: "https://private.example.com/graphql", isPublic: false },
+    ]);
+    expect(result.grpc).toHaveLength(0);
+  });
+
+  it("throws when a grpc_env variable is not set", () => {
+    const filePath = writeYaml(
+      "missing-env.yaml",
+      `
+providers:
+  - id: private
+    name: "Private"
+    grpc_env: MISSING_VAR
+    public: false
+`,
+    );
+
+    expect(() => loadProviders(filePath, {})).toThrow(/MISSING_VAR/);
+  });
+
+  it("throws when a graphql_env variable is not set", () => {
+    const filePath = writeYaml(
+      "missing-gql-env.yaml",
+      `
+providers:
+  - id: private
+    name: "Private"
+    graphql_env: MISSING_GQL_VAR
+    public: false
+`,
+    );
+
+    expect(() => loadProviders(filePath, {})).toThrow(/MISSING_GQL_VAR/);
+  });
+
+  it("allows mixing public literal field with private env field on the same provider", () => {
+    const filePath = writeYaml(
+      "mixed.yaml",
+      `
+providers:
+  - id: mixed
+    name: "Mixed"
+    grpc: "public.example.com:443"
+    graphql_env: PRIVATE_GQL_URL
+    public: false
+`,
+    );
+
+    const result = loadProviders(filePath, { PRIVATE_GQL_URL: "https://private.example.com/graphql" });
+
+    expect(result.grpc).toEqual([
+      { id: "mixed", endpoint: "public.example.com:443", isPublic: false },
+    ]);
+    expect(result.graphql).toEqual([
+      { id: "mixed", endpoint: "https://private.example.com/graphql", isPublic: false },
+    ]);
+  });
+
+  it("defaults isPublic to true for providers without the public field", () => {
+    const filePath = writeYaml(
+      "default-public.yaml",
+      `
+providers:
+  - id: pub
+    name: "Public Provider"
+    grpc: "pub.example.com:443"
+`,
+    );
+
+    const result = loadProviders(filePath);
+
+    expect(result.grpc[0]?.isPublic).toBe(true);
   });
 
   it("throws when providers list is empty", () => {

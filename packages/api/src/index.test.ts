@@ -14,8 +14,8 @@ const mockCh = { insert: mockInsert, query: mockQuery } as unknown as ClickHouse
 const TEST_SECRET = "test-secret-abc";
 
 const TEST_PROVIDERS: Provider[] = [
-  { id: "test-provider", name: "Test Provider", grpc: "example.com:443" },
-  { id: "other-provider", name: "Other Provider", graphql: "https://other.example.com/graphql" },
+  { id: "test-provider", name: "Test Provider", grpc: "example.com:443", public: true },
+  { id: "other-provider", name: "Other Provider", graphql: "https://other.example.com/graphql", public: true },
 ];
 
 // Valid ingest event fixture

@@ -112,6 +112,35 @@ Fly.io. Native multi-region VM support, per-region Machines, simple deploy from 
 
 ---
 
+## ADR-008 — Private endpoint support via env-var references
+
+**Date:** 2026-06-10
+**Status:** Accepted
+
+**Context:**
+Some infrastructure providers (e.g. QuickNode) can only offer authenticated endpoints where the API key is embedded in the URL (e.g. `https://proud-crimson.quiknode.pro/abc123/`). Storing such URLs in `config/providers.yaml` (which is public on GitHub) would expose secrets. ADR-005 explicitly deferred this case with the note: *"If a private-endpoint track is ever added, it requires a new ADR."*
+
+**Decision:**
+Extend `config/providers.yaml` with two new optional fields per provider entry: `grpc_env` and `graphql_env`. These hold the **name of an environment variable** that the probe daemon resolves at startup. The actual secret URL lives only in Fly.io secrets and is never committed to the repository.
+
+A new boolean field `public` (default: `true`) marks whether a provider's endpoint URL is freely accessible. For `public: false` providers:
+- The probe daemon still probes and emits measurement events normally.
+- The public API (`GET /v1/providers`) does **not** expose the endpoint URL in its response.
+- All metrics (latency, freshness, uptime, error rate) are still published — the leaderboard shows a private provider's performance, just not its URL.
+
+The probe daemon fails fast at startup with a descriptive error if a referenced env var is not set, consistent with the existing Zod-based env validation pattern.
+
+**Public providers** continue to use the existing `grpc` / `graphql` literal fields unchanged. Mixing `grpc` (literal) with `graphql_env` (env var) on the same provider is allowed.
+
+**Consequences:**
+- Private providers can participate in the public leaderboard and benchmarks.
+- Secrets never touch the repository.
+- Fly secrets (`fly secrets set PROVIDER_GRAPHQL_URL="..."`) are the single source of truth for private URLs.
+- `loadProviders()` in `packages/probes/src/config.ts` accepts an optional `env` parameter (default `process.env`) to keep tests hermetic.
+- The API's `GET /v1/providers` response shape gains a `public` boolean field on each provider entry.
+
+---
+
 ## ADR-007 — Stream stability metric definitions
 
 **Date:** 2026-05-26  

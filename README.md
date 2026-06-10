@@ -12,9 +12,15 @@ SuiScope continuously probes public gRPC and GraphQL endpoints from multiple geo
 
 ## For providers: get listed on the leaderboard
 
-Listing is free, open, and permanent as long as your endpoint stays publicly accessible. The process is a single pull request — no account required.
+Listing is free, open, and permanent as long as your endpoint stays reachable. Two tracks are available depending on whether your endpoint is publicly accessible or requires an API key.
 
-### Requirements
+---
+
+### Track A — Public endpoint (PR to this repo)
+
+Use this track if your endpoint is freely reachable from the internet without authentication.
+
+#### Requirements
 
 | Requirement | Detail |
 |---|---|
@@ -23,11 +29,9 @@ Listing is free, open, and permanent as long as your endpoint stays publicly acc
 | **At least one endpoint** | gRPC, GraphQL, or both. |
 | **Stable URL** | The endpoint must not be for testing or temporary use. |
 
-> **Important:** Only freely accessible public endpoints appear in the leaderboard. Private or authenticated endpoints are out of scope by design.
-
 ---
 
-### Step-by-step guide
+### Track A — Step-by-step guide
 
 #### 1. Fork the repository
 
@@ -128,6 +132,27 @@ Then go to [github.com/ruby-nodes/sui-scope/pulls](https://github.com/ruby-nodes
 #### 5. Review and merge
 
 We review provider PRs within a few business days. Once merged, your provider will appear on the leaderboard within the next probe cycle (typically within 5 minutes).
+
+---
+
+### Track B — Private / authenticated endpoint (contact us)
+
+Use this track if your endpoint requires an API key embedded in the URL (e.g. QuickNode, Alchemy, or similar managed node providers). Your metrics will appear on the leaderboard — the endpoint URL is **never** exposed publicly.
+
+#### How it works
+
+1. **Contact us** — open an issue at [github.com/ruby-nodes/sui-scope/issues](https://github.com/ruby-nodes/sui-scope/issues) with the subject `[provider] Private endpoint — <Your Name>` and confirm you want to participate.
+2. **We open a PR** — we add your provider entry to `config/providers.yaml` with `public: false` and a named env-var reference (e.g. `graphql_env: YOURNAME_GRAPHQL_URL`). No secret goes into the repo.
+3. **You send us the URL** — share your endpoint URL privately (e.g. via a DM). We store it as a Fly.io secret on the probe machines.
+4. **Probes start** — after the next deploy your provider is live on the leaderboard.
+
+#### What is shown publicly
+
+| Field | Private provider |
+|---|---|
+| Provider name | ✅ shown |
+| Latency, freshness, uptime, error rate | ✅ shown |
+| Endpoint URL | ❌ withheld |
 
 ---
 

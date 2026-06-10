@@ -24,10 +24,28 @@ const ProviderEntrySchema = z
     name: z.string().min(1),
     grpc: z.string().min(1).optional(),
     graphql: z.string().url().optional(),
+    /** Name of an env var holding the gRPC "host:port" for this provider (private endpoint). */
+    grpc_env: z.string().min(1).optional(),
+    /** Name of an env var holding the GraphQL full URL for this provider (private endpoint). */
+    graphql_env: z.string().min(1).optional(),
+    /**
+     * Whether this provider's endpoint URL is publicly accessible without auth.
+     * Defaults to true. Set to false for providers whose URL contains an embedded API key.
+     * Metrics are always published; only the URL is withheld when public is false.
+     */
+    public: z.boolean().default(true),
   })
-  .refine((data) => data.grpc != null || data.graphql != null, {
-    message: "Each provider must have at least one of: grpc, graphql",
-  });
+  .refine(
+    (data) =>
+      data.grpc != null ||
+      data.graphql != null ||
+      data.grpc_env != null ||
+      data.graphql_env != null,
+    {
+      message:
+        "Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env",
+    },
+  );
 
 const ProvidersFileSchema = z.object({
   providers: z.array(ProviderEntrySchema).min(1),
@@ -42,10 +60,16 @@ export type LoadedProviders = {
 /**
  * Read and validate a providers YAML file.
  *
+ * Resolves `grpc_env` / `graphql_env` references against `env` at call time.
+ * Throws with a descriptive message if a referenced env var is not set.
+ *
  * @param filePath - Absolute path to the YAML file.
- * @throws If the file cannot be read or fails Zod validation.
+ * @param env      - Environment variable map. Defaults to `process.env`.
  */
-export function loadProviders(filePath: string): LoadedProviders {
+export function loadProviders(
+  filePath: string,
+  env: NodeJS.ProcessEnv = process.env,
+): LoadedProviders {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = ProvidersFileSchema.parse(loadYaml(raw));
 
@@ -53,11 +77,36 @@ export function loadProviders(filePath: string): LoadedProviders {
   const graphql: GraphQLProviderConfig[] = [];
 
   for (const entry of parsed.providers) {
-    if (entry.grpc != null) {
-      grpc.push({ id: entry.id, endpoint: entry.grpc });
+    const isPublic = entry.public;
+
+    // ── gRPC endpoint ────────────────────────────────────────────────────────
+    let grpcEndpoint = entry.grpc;
+    if (entry.grpc_env != null) {
+      const val = env[entry.grpc_env];
+      if (!val) {
+        throw new Error(
+          `Provider "${entry.id}": env var "${entry.grpc_env}" (grpc_env) is not set`,
+        );
+      }
+      grpcEndpoint = val;
     }
-    if (entry.graphql != null) {
-      graphql.push({ id: entry.id, endpoint: entry.graphql });
+    if (grpcEndpoint != null) {
+      grpc.push({ id: entry.id, endpoint: grpcEndpoint, isPublic });
+    }
+
+    // ── GraphQL endpoint ─────────────────────────────────────────────────────
+    let graphqlEndpoint = entry.graphql;
+    if (entry.graphql_env != null) {
+      const val = env[entry.graphql_env];
+      if (!val) {
+        throw new Error(
+          `Provider "${entry.id}": env var "${entry.graphql_env}" (graphql_env) is not set`,
+        );
+      }
+      graphqlEndpoint = val;
+    }
+    if (graphqlEndpoint != null) {
+      graphql.push({ id: entry.id, endpoint: graphqlEndpoint, isPublic });
     }
   }
 

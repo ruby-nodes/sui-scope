@@ -1,15 +1,28 @@
 # SuiScope provider registry
 # Maintained manually; additions accepted via PR with human review.
-# Only providers with freely accessible public endpoints appear in the public leaderboard.
-# See decisions.md ADR-005.
+# See decisions.md ADR-005 (public endpoints) and ADR-008 (private endpoints via env vars).
 #
 # Schema:
-#   id:      Stable identifier used in metric events and API responses.
-#   name:    Human-readable display name.
-#   grpc:    Optional. Public gRPC endpoint as "host:port".
-#   graphql: Optional. Public GraphQL endpoint as a full URL.
+#   id:          Stable identifier used in metric events and API responses.
+#   name:        Human-readable display name.
+#   public:      Optional boolean. Default: true. Set to false for auth-gated endpoints.
 #
-# Each provider must have at least one of: grpc, graphql.
+#   Public endpoint fields (URL stored directly in this file — never put secrets here):
+#   grpc:        Optional. Public gRPC endpoint as "host:port".
+#   graphql:     Optional. Public GraphQL endpoint as a full URL.
+#
+#   Private endpoint fields (URL stored in an env var / Fly secret, not in this file):
+#   grpc_env:    Optional. Name of the env var holding the gRPC "host:port" for this provider.
+#   graphql_env: Optional. Name of the env var holding the GraphQL full URL for this provider.
+#
+# Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env.
+# Mixing public and private fields on the same provider is allowed (e.g. public grpc + private graphql_env).
+#
+# For private providers (public: false):
+#   - Metrics are still published on the leaderboard.
+#   - The endpoint URL is NOT exposed in the public API or dashboard.
+#   - Set the corresponding Fly secret before deploying probes:
+#       fly secrets set MY_PROVIDER_GRAPHQL_URL="https://..." -a sui-scope-probes
 
 providers:
   - id: mystenlab

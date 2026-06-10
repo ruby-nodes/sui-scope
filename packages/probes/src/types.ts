@@ -23,10 +23,14 @@ export type MeasurementEvent = {
 export type GrpcProviderConfig = {
   id: string;
   endpoint: string; // "host:port", e.g. "fullnode.mainnet.sui.io:443"
+  /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
+  isPublic?: boolean;
 };
 
 /** Configuration for a single GraphQL provider endpoint. */
 export type GraphQLProviderConfig = {
   id: string;
   endpoint: string; // full URL, e.g. "https://sui-mainnet.mystenlabs.com/graphql"
+  /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
+  isPublic?: boolean;
 };

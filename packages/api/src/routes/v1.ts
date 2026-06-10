@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import type { ClickHouseClient } from "../db/client.js";
 import type { Provider } from "../providers.js";
+import { toProviderApiResponse } from "../providers.js";
 import {
   VALID_WINDOWS,
   queryLatestMetrics,
@@ -63,7 +64,7 @@ export function createV1Router(
   // ── GET /v1/providers ─────────────────────────────────────────────────────
 
   app.get("/providers", (c) => {
-    return c.json({ providers });
+    return c.json({ providers: toProviderApiResponse(providers) });
   });
 
   // ── GET /v1/metrics ───────────────────────────────────────────────────────
