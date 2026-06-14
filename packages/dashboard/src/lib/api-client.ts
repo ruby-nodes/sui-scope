@@ -94,7 +94,7 @@ export async function fetchMetrics(): Promise<ProviderMetrics[]> {
   }
   const data = (await res.json()) as MetricsResponse;
   // Default is_public to true for API responses that pre-date the field.
-  return data.metrics.map((m) => ({ is_public: true, ...m }));
+  return data.metrics.map((m) => ({ ...m, is_public: m.is_public ?? true }));
 }
 
 /**
