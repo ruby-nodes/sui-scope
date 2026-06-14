@@ -29,6 +29,7 @@ interface DisplayRow {
   key: string;
   provider_id: string;
   provider_name: string;
+  is_public: boolean;
   endpoint_type: EndpointType;
   latency_p50: number | null;
   latency_p90: number | null;
@@ -153,6 +154,7 @@ function aggregate(rows: ProviderMetrics[]): DisplayRow[] {
       key: k,
       provider_id: first.provider_id,
       provider_name: first.provider_name,
+      is_public: first.is_public,
       endpoint_type: first.endpoint_type,
       latency_p50: avgOrNull(g.map((r) => r.latency_p50)),
       latency_p90: avgOrNull(g.map((r) => r.latency_p90)),
@@ -213,12 +215,36 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     sortable: false,
     align: "left",
     render: (row) => (
-      <Link
-        href={`/provider/${row.provider_id}`}
-        className="font-medium text-text-primary hover:text-accent transition-colors"
-      >
-        {row.provider_name}
-      </Link>
+      <div className="flex items-center gap-1.5">
+        <Link
+          href={`/provider/${row.provider_id}`}
+          className="font-medium text-text-primary hover:text-accent transition-colors"
+        >
+          {row.provider_name}
+        </Link>
+        {row.is_public && (
+          <a
+            href="/methodology#public-endpoints"
+            title="Public endpoint — rate limiting may apply. Click for details."
+            className="text-text-muted opacity-50 hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="w-3 h-3"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </a>
+        )}
+      </div>
     ),
   },
   {

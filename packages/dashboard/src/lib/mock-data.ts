@@ -11,6 +11,8 @@ export interface ProviderMetrics {
   provider_name: string;
   endpoint_type: EndpointType;
   region: string;
+  /** Whether this provider's endpoint is freely publicly accessible (no auth required). */
+  is_public: boolean;
   /** Milliseconds — cold TCP+TLS latency, p50 */
   latency_p50: number | null;
   /** Milliseconds — cold TCP+TLS latency, p90 */
@@ -74,7 +76,8 @@ export function regionLabel(code: string): string {
   return REGION_LABELS[code.toLowerCase()] ?? code.toUpperCase();
 }
 
-export const MOCK_METRICS: ProviderMetrics[] = [
+export const MOCK_METRICS: ProviderMetrics[] = (
+  [
   // Mysten Labs — gRPC
   { provider_id: "mystenlab", provider_name: "Mysten Labs", endpoint_type: "grpc",    region: "iad", latency_p50: 42,  latency_p90: 68,  latency_p99: 112, freshness_avg: 1, uptime: 0.999, error_rate: 0.001 },
   { provider_id: "mystenlab", provider_name: "Mysten Labs", endpoint_type: "grpc",    region: "fra", latency_p50: 88,  latency_p90: 130, latency_p99: 210, freshness_avg: 2, uptime: 0.998, error_rate: 0.002 },
@@ -93,7 +96,8 @@ export const MOCK_METRICS: ProviderMetrics[] = [
   // 01node — GraphQL
   { provider_id: "01node",    provider_name: "01node",      endpoint_type: "graphql", region: "iad", latency_p50: 112, latency_p90: 185, latency_p99: 310, freshness_avg: 5, uptime: 0.982, error_rate: 0.018 },
   { provider_id: "01node",    provider_name: "01node",      endpoint_type: "graphql", region: "fra", latency_p50: 68,  latency_p90: 115, latency_p99: 195, freshness_avg: 3, uptime: 0.990, error_rate: 0.010 },
-];
+] as Omit<ProviderMetrics, "is_public">[]
+).map((r) => ({ ...r, is_public: true }));
 
 // ─── Time-series mock data ────────────────────────────────────────────────────
 

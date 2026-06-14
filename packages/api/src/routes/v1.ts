@@ -81,12 +81,15 @@ export function createV1Router(
       );
     }
 
-    // Enrich each row with provider_name from the provider list.
-    const named = rows.map((r) => ({
-      ...r,
-      provider_name:
-        providers.find((p) => p.id === r.provider_id)?.name ?? r.provider_id,
-    }));
+    // Enrich each row with provider_name and is_public from the provider list.
+    const named = rows.map((r) => {
+      const provider = providers.find((p) => p.id === r.provider_id);
+      return {
+        ...r,
+        provider_name: provider?.name ?? r.provider_id,
+        is_public: provider?.public ?? true,
+      };
+    });
 
     return c.json({ metrics: named, generated_at: Date.now() });
   });

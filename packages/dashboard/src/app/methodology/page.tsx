@@ -132,6 +132,7 @@ const TOC: Array<{ href: string; label: string }> = [
   { href: "#tier-thresholds", label: "Tier thresholds" },
   { href: "#anti-gaming", label: "Anti-gaming approach" },
   { href: "#scope", label: "What is not measured" },
+  { href: "#public-endpoints", label: "Public endpoints" },
 ];
 
 /* ── Page ──────────────────────────────────────────────────────────── */
@@ -469,6 +470,34 @@ export default function MethodologyPage() {
                 with private or auth-gated infrastructure are not included in
                 the leaderboard unless they expose a freely accessible public
                 endpoint.
+              </p>
+            </CalloutBox>
+          </Section>
+
+          {/* ── Public endpoints ──────────────────────────────────── */}
+          <Section id="public-endpoints" title="Public endpoints">
+            <p>
+              SuiScope benchmarks both public and private endpoints. Public
+              endpoints are freely accessible — no API keys or authentication
+              required. Because they are open to the internet, providers apply
+              standard rate limiting and request throttling to protect their
+              infrastructure.
+            </p>
+            <p>
+              Probe traffic is deliberately low-volume: one request per
+              provider per endpoint type every 60 seconds. This is well within
+              the fair-use limits of any public node. If you use the same
+              endpoints in your own application, be aware that heavier usage
+              patterns may trigger provider-side rate limiting that is not
+              reflected in SuiScope measurements.
+            </p>
+            <CalloutBox title="Rate limiting notice">
+              <p>
+                Public endpoints are subject to the rate-limiting policies of
+                each respective provider. SuiScope does not control or publish
+                individual rate limits — consult the provider&rsquo;s
+                documentation for details. Private endpoints are auth-gated and
+                not subject to the same public throttling constraints.
               </p>
             </CalloutBox>
           </Section>

@@ -93,7 +93,8 @@ export async function fetchMetrics(): Promise<ProviderMetrics[]> {
     throw new Error(`/v1/metrics responded ${res.status}`);
   }
   const data = (await res.json()) as MetricsResponse;
-  return data.metrics;
+  // Default is_public to true for API responses that pre-date the field.
+  return data.metrics.map((m) => ({ is_public: true, ...m }));
 }
 
 /**

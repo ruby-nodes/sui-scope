@@ -38,21 +38,25 @@
 providers:
   - id: mystenlab
     name: "Mysten Labs"
+    public: true
     grpc: "fullnode.mainnet.sui.io:443"
     graphql: "https://graphql.mainnet.sui.io/graphql"
 
   - id: ankr
     name: "Ankr"
+    public: true
     grpc: "sui.grpc.ankr.com:443"
     graphql: "https://rpc.ankr.com/http/sui_graphql"
 
   - id: 01node
     name: "01node"
+    public: true
     grpc: "sui.01.ro:443"
     graphql: "https://sui.01.ro/graphql"
 
   - id: triton
     name: "Triton One"
+    public: true
     grpc: "sui-mainnet.nodeinfra.com:443"
 
   - id: blockpi
