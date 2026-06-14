@@ -2,7 +2,7 @@ app            = "suiscope-clickhouse"
 primary_region = "iad"
 
 [build]
-  image = "clickhouse/clickhouse-server:24.12-alpine"
+  dockerfile = "clickhouse.Dockerfile"
 
 [env]
   CLICKHOUSE_USER = "default"

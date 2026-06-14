@@ -1,0 +1,40 @@
+<clickhouse>
+    <!-- Disable all internal system log tables.
+         These are enabled by default in the official image and will fill the
+         disk within days on a busy ingest workload. SuiScope does not use any
+         of them — operational observability comes from Fly.io metrics instead. -->
+    <text_log remove="remove"/>
+    <query_log remove="remove"/>
+    <query_thread_log remove="remove"/>
+    <query_views_log remove="remove"/>
+    <part_log remove="remove"/>
+    <metric_log remove="remove"/>
+    <asynchronous_metric_log remove="remove"/>
+    <trace_log remove="remove"/>
+    <processors_profile_log remove="remove"/>
+    <query_metric_log remove="remove"/>
+    <session_log remove="remove"/>
+    <zookeeper_log remove="remove"/>
+    <backup_log remove="remove"/>
+    <blob_storage_log remove="remove"/>
+
+    <!-- Limit file-based server log to 100 MB total (10 × 10 MB files). -->
+    <logger>
+        <level>warning</level>
+        <size>10M</size>
+        <count>10</count>
+    </logger>
+
+    <!-- Refuse new inserts when less than 1 GiB remains on the data volume.
+         This surfaces a clean error instead of crashing or corrupting data. -->
+    <merge_tree>
+        <min_bytes_to_rebalance_partition_over_jbod>0</min_bytes_to_rebalance_partition_over_jbod>
+    </merge_tree>
+    <storage_configuration>
+        <disks>
+            <default>
+                <keep_free_space_bytes>1073741824</keep_free_space_bytes>
+            </default>
+        </disks>
+    </storage_configuration>
+</clickhouse>
