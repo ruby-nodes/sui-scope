@@ -164,3 +164,32 @@ Stream metrics apply to gRPC subscriptions only. GraphQL subscriptions are out o
 - Stream metrics are Phase 2 (M4) — not built during M1–M3
 - The 5 s grace window prevents noise from transient TCP hiccups
 - `stream_checkpoint_gap` provides a continuous lag signal independent of disconnect events
+
+---
+
+## ADR-009 — Archival endpoint support
+
+**Date:** 2026-06-14
+**Status:** Accepted
+
+**Context:**
+The Sui Archival Service exposes the same `sui.rpc.v2.LedgerService` gRPC API as a full node but serves historical data beyond the full-node retention window. Mysten Labs operates the first public archival endpoint (`archive.mainnet.sui.io:443`). Treating archival as a separate provider entry would create a misleading split; a provider is a single entity that may offer multiple endpoint types.
+
+**Decision:**
+Add an `archival` field (and `archival_env` for private endpoints) to `config/providers.yaml`, parallel to the existing `grpc` and `graphql` fields. A single provider entry may combine any of the three types.
+
+The archival probe measures:
+- **`latency_ms`** — cold TCP+TLS connect + `GetCheckpoint` round-trip (DNS excluded, same definition as gRPC/GraphQL latency).
+- **`success`** — whether the archival node returned data for a checkpoint ~30 days behind the chain head (`chain_head − 2 592 000`). A `NOT_FOUND` response counts as failure.
+
+**`freshness_checkpoints` is deliberately not emitted** for archival probes — archival nodes are by design behind the chain head, so reporting a large gap would be misleading.
+
+The 30-day depth constant (2 592 000 ≈ 30 × 86 400 checkpoints at ~1/s) is fixed and deterministic per cycle. No randomness is introduced; caching at the Bigtable-backed archival layer is considered unlikely in practice.
+
+**Consequences:**
+- `ArchivalProviderConfig` is a new type in `packages/probes/src/types.ts`.
+- `loadProviders()` returns `{ grpc, graphql, archival }`.
+- `SchedulerConfig` gains `archivalProviders`.
+- `archival-probe.ts` is a new probe module using the existing `LedgerService` proto (extended with `GetCheckpoint`).
+- The leaderboard endpoint-type filter gains an `archival` option (UI update deferred to next milestone).
+- The methodology page documents the archival probe mechanics.

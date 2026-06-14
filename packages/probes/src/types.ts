@@ -46,3 +46,13 @@ export type GraphQLProviderConfig = {
   /** If set, attach this token as an HTTP header on every request. */
   token?: ProviderToken;
 };
+
+/** Configuration for a single archival gRPC provider endpoint. */
+export type ArchivalProviderConfig = {
+  id: string;
+  endpoint: string; // "host:port", e.g. "archive.mainnet.sui.io:443"
+  /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
+  isPublic?: boolean;
+  /** If set, attach this token as gRPC call metadata on every request. */
+  token?: ProviderToken;
+};

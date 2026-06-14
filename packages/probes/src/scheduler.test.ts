@@ -11,6 +11,7 @@ const BASE_CONFIG: SchedulerConfig = {
   graphqlProviders: [
     { id: "test-gql", endpoint: "https://gql.example.com/graphql" },
   ],
+  archivalProviders: [],
   region: "us-east-1",
   probeVersion: "0.1.0",
   intervalMs: 60_000,

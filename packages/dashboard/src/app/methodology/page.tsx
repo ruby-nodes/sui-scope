@@ -128,6 +128,7 @@ function CalloutBox({
 const TOC: Array<{ href: string; label: string }> = [
   { href: "#overview", label: "Overview" },
   { href: "#probe-cycle", label: "Probe cycle" },
+  { href: "#archival-probe", label: "Archival probe" },
   { href: "#metrics", label: "Metric definitions" },
   { href: "#tier-thresholds", label: "Tier thresholds" },
   { href: "#anti-gaming", label: "Anti-gaming approach" },
@@ -267,11 +268,86 @@ export default function MethodologyPage() {
 
             <SubSection title="Endpoint types">
               <p>
-                Each provider may expose gRPC and/or GraphQL endpoints. Probes
-                run independently for each endpoint type. If a provider
-                exposes both, both appear as separate rows in the leaderboard.
+                Each provider may expose gRPC, GraphQL, and/or Archival
+                endpoints. Probes run independently for each endpoint type. If
+                a provider exposes multiple types, each appears as a separate
+                row in the leaderboard filtered by endpoint type.
+              </p>
+              <p>
+                Archival endpoints expose the same{" "}
+                <code className="rounded bg-bg-raised px-1 py-0.5 font-mono text-xs text-accent">
+                  LedgerService
+                </code>{" "}
+                gRPC API as full nodes but serve historical data beyond the
+                full-node retention window. See the{" "}
+                <a href="#archival-probe" className="text-accent underline underline-offset-2">
+                  Archival probe
+                </a>{" "}
+                section for the specific probe mechanics.
               </p>
             </SubSection>
+          </Section>
+
+          {/* ── Archival probe ─────────────────────────────────────── */}
+          <Section id="archival-probe" title="Archival probe">
+            <p>
+              Archival nodes serve historical Sui data beyond what standard
+              full nodes retain. The Sui Archival Service exposes the same{" "}
+              <code className="rounded bg-bg-raised px-1 py-0.5 font-mono text-xs text-accent">
+                sui.rpc.v2.LedgerService
+              </code>{" "}
+              gRPC API as a full node. What differs is the probe intent:
+              instead of checking freshness, the archival probe verifies that
+              the node can actually serve deep historical data.
+            </p>
+
+            <SubSection title="What is probed">
+              <StepList
+                steps={[
+                  "DNS resolution — excluded from latency, same as gRPC/GraphQL probes.",
+                  "Open a new cold TCP+TLS connection to the archival endpoint.",
+                  "Compute a target checkpoint: chain_head − 2\u202f592\u202f000 (approximately 30 days behind the current chain head, at ~1 checkpoint per second).",
+                  "Call GetCheckpoint with the target sequence number.",
+                  "Record latency_ms (TTFB) and success. A NOT_FOUND response is a failure — the node lacks the requested depth.",
+                  "Close the connection.",
+                ]}
+              />
+            </SubSection>
+
+            <SubSection title="Why 30 days">
+              <p>
+                The 30-day threshold (2\u202f592\u202f000 checkpoints) is well beyond any
+                known full-node retention window. A successful response at
+                this depth confirms that the node is not merely a full node
+                masquerading as an archival service.
+              </p>
+            </SubSection>
+
+            <SubSection title="What is not measured for archival">
+              <p>
+                Freshness (
+                <code className="rounded bg-bg-raised px-1 py-0.5 font-mono text-xs text-accent">
+                  freshness_checkpoints
+                </code>
+                ) is intentionally not measured for archival endpoints.
+                Archival nodes are designed to lag the chain head — reporting
+                a large freshness gap would be misleading rather than
+                informative.
+              </p>
+            </SubSection>
+
+            <CalloutBox title="Probe target is deterministic">
+              <p>
+                The target checkpoint is always{" "}
+                <code className="rounded bg-bg-raised px-1 py-0.5 font-mono text-xs text-accent">
+                  chain_head − 2\u202f592\u202f000
+                </code>
+                , computed fresh each cycle. There is no per-cycle randomness.
+                Caching at the archival service layer is considered unlikely
+                given the Bigtable-backed architecture of the reference
+                implementation.
+              </p>
+            </CalloutBox>
           </Section>
 
           {/* ── Metric definitions ─────────────────────────────────── */}

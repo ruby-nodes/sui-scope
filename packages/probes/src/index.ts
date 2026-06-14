@@ -14,9 +14,10 @@ import type { MeasurementEvent } from "./types.js";
 
 export const PACKAGE_NAME = "@sui-scope/probes";
 
-export type { GrpcProviderConfig, GraphQLProviderConfig, MeasurementEvent } from "./types.js";
+export type { GrpcProviderConfig, GraphQLProviderConfig, ArchivalProviderConfig, MeasurementEvent } from "./types.js";
 export { fetchChainHead, probeGrpc } from "./grpc-probe.js";
 export { probeGraphQL } from "./graphql-probe.js";
+export { probeArchival } from "./archival-probe.js";
 export { loadProviders, loadEnv, resolveDefaultProvidersPath, readProbeVersion } from "./config.js";
 export type { LoadedProviders, ProbeEnv } from "./config.js";
 export { runOneCycle, startScheduler } from "./scheduler.js";
@@ -79,7 +80,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   console.error(
     `[scheduler] starting — region=${env.REGION} interval=${env.PROBE_INTERVAL_MS}ms ` +
-      `grpc_providers=${providers.grpc.length} graphql_providers=${providers.graphql.length}`,
+      `grpc_providers=${providers.grpc.length} graphql_providers=${providers.graphql.length} ` +
+      `archival_providers=${providers.archival.length}`,
   );
 
   const networkEmit = createNetworkEmit(env.INGEST_URL, env.INGEST_SECRET);
@@ -88,6 +90,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     {
       grpcProviders: providers.grpc,
       graphqlProviders: providers.graphql,
+      archivalProviders: providers.archival,
       region: env.REGION,
       probeVersion,
       intervalMs: env.PROBE_INTERVAL_MS,

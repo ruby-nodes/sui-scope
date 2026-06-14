@@ -57,6 +57,18 @@
 
 ---
 
+## M5 · Archival Endpoints
+**Goal:** Archival probe live for Mysten Labs; methodology documented; provider registry extended.
+
+| ID | Task | Status |
+|---|---|---|
+| M5-01 | Implement archival probe: `GetCheckpoint` at 30-day depth, `latency_ms` + `success`, no `freshness_checkpoints` | `[x]` |
+| M5-02 | Extend `providers.yaml` with `archival` / `archival_env` fields; add Mysten `archive.mainnet.sui.io:443` | `[x]` |
+| M5-03 | Update methodology page with archival probe section (depth rationale, deterministic target, no freshness) | `[x]` |
+| M5-04 | Deploy updated probes; verify archival measurements reach ClickHouse | `[ ]` |
+
+---
+
 ## Status key
 
 | Symbol | Meaning |
@@ -90,3 +102,4 @@
 - 2026-05-27 · M4-02 · Added Triton One (gRPC-only, sui-mainnet.nodeinfra.com:443 — confirmed HTTP/2 + GetServiceInfo responding); Allnodes skipped (no public gRPC or GraphQL endpoint — only JSON-RPC at publicnode.com which is unsupported); provider count is 4 (not 5) by explicit user decision; probe machines cloned to sin, nrt, lax (new) + fra restarted → 5 active regions: iad, fra, sin, nrt, lax.
 - 2026-05-27 · M4-03 · Comparison page at /compare uses URL query params (?p=) for shareable provider selection; leaderboard gains checkbox column + "Compare (N) →" button; one overlay chart per metric (4 charts) with one line per provider; stat cards row shows current snapshot per provider; endpoint type + region + 24h/7d controls on the compare page; provider add/remove via pill UI on the compare page itself.
 - 2026-05-27 · M4-04 · API reference published as a dashboard page at /api (NavBar link added) plus a machine-readable OpenAPI 3.1 spec at docs/openapi.yaml; human-readable page covers all three public endpoints with parameter tables, field schemas, and annotated response examples; design follows the established design system.
+- 2026-06-14 · M5-01/02/03 · Archival probe implemented: GetCheckpoint at chain_head−2_592_000 (30 days); ArchivalProviderConfig added to types.ts; config.ts loads archival/archival_env fields; scheduler wired with archivalProviders; proto extended with GetCheckpoint RPC; Mysten archival endpoint added to providers.yaml; methodology page updated with archival probe section and ADR-009 recorded.

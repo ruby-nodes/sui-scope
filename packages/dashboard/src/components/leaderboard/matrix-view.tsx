@@ -18,6 +18,7 @@ interface MatrixRow {
   provider_name: string;
   grpc: EndpointSlice | null;
   graphql: EndpointSlice | null;
+  archival: EndpointSlice | null;
 }
 
 // ─── Tier helpers ─────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ function fmtPct(v: number | null, decimals = 1): string {
 function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
   const grouped = new Map<
     string,
-    { name: string; grpc: ProviderMetrics[]; graphql: ProviderMetrics[] }
+    { name: string; grpc: ProviderMetrics[]; graphql: ProviderMetrics[]; archival: ProviderMetrics[] }
   >();
 
   for (const r of raw) {
@@ -84,6 +85,7 @@ function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
         name: r.provider_name,
         grpc: [],
         graphql: [],
+        archival: [],
       });
     }
     grouped.get(r.provider_id)![r.endpoint_type].push(r);
@@ -103,6 +105,7 @@ function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
       provider_name: g.name,
       grpc: summarize(g.grpc),
       graphql: summarize(g.graphql),
+      archival: summarize(g.archival),
     };
   });
 }
@@ -222,6 +225,12 @@ export function MatrixView({ rows }: MatrixViewProps) {
               border="border-graphql/20"
               colSpan={3}
             />
+            <GroupHeader
+              label="Archival"
+              color="text-archival"
+              border="border-archival/20"
+              colSpan={3}
+            />
           </tr>
           {/* Sub-headers */}
           <tr className="border-b border-border bg-bg-raised/60 text-xs uppercase tracking-wider text-text-muted">
@@ -243,6 +252,16 @@ export function MatrixView({ rows }: MatrixViewProps) {
               Uptime
             </th>
             <th className="border border-graphql/15 px-3 py-2 text-center font-medium">
+              Err%
+            </th>
+            {/* Archival sub-cols */}
+            <th className="border border-archival/15 px-3 py-2 text-center font-medium">
+              p50
+            </th>
+            <th className="border border-archival/15 px-3 py-2 text-center font-medium">
+              Uptime
+            </th>
+            <th className="border border-archival/15 px-3 py-2 text-center font-medium">
               Err%
             </th>
           </tr>
@@ -314,6 +333,33 @@ export function MatrixView({ rows }: MatrixViewProps) {
                   <MissingCell label="GraphQL p50 latency — not available" />
                   <MissingCell label="GraphQL uptime — not available" />
                   <MissingCell label="GraphQL error rate — not available" />
+                </>
+              )}
+
+              {/* Archival cells */}
+              {row.archival !== null ? (
+                <>
+                  <MetricCell
+                    tier={latencyTier(row.archival.p50)}
+                    value={fmtMs(row.archival.p50)}
+                    label="Archival p50 latency"
+                  />
+                  <MetricCell
+                    tier={uptimeTier(row.archival.uptime)}
+                    value={fmtPct(row.archival.uptime)}
+                    label="Archival uptime"
+                  />
+                  <MetricCell
+                    tier={errorRateTier(row.archival.error_rate)}
+                    value={fmtPct(row.archival.error_rate, 2)}
+                    label="Archival error rate"
+                  />
+                </>
+              ) : (
+                <>
+                  <MissingCell label="Archival p50 latency — not available" />
+                  <MissingCell label="Archival uptime — not available" />
+                  <MissingCell label="Archival error rate — not available" />
                 </>
               )}
             </tr>

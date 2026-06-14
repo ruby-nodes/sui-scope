@@ -31,6 +31,8 @@
   --color-grpc-bg: #2e1065; /* deep violet background */
   --color-graphql: #4da2ff; /* Sui cyan — GraphQL */
   --color-graphql-bg: #1a3a5c; /* deep cyan background */
+  --color-archival: #fb923c; /* orange-400 — Archival */
+  --color-archival-bg: #431407; /* deep orange background */
 
   /* ── Rank medal colors ───────────────────────────────────────────── */
   --color-rank-gold: #fbbf24;   /* amber-400 */

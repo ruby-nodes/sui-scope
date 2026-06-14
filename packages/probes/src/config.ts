@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { load as loadYaml } from "js-yaml";
 import { z } from "zod";
 
-import type { GrpcProviderConfig, GraphQLProviderConfig } from "./types.js";
+import type { GrpcProviderConfig, GraphQLProviderConfig, ArchivalProviderConfig } from "./types.js";
 
 // ─── Providers YAML schema ────────────────────────────────────────────────────
 
@@ -26,6 +26,10 @@ const ProviderEntrySchema = z
     graphql: z.string().url().optional(),
     /** Name of an env var holding the gRPC "host:port" for this provider (private endpoint). */
     grpc_env: z.string().min(1).optional(),
+    /** Name of an env var holding the archival gRPC "host:port" for this provider (private endpoint). */
+    archival_env: z.string().min(1).optional(),
+    /** Public archival gRPC endpoint as "host:port". */
+    archival: z.string().min(1).optional(),
     /** Name of an env var holding the GraphQL full URL for this provider (private endpoint). */
     graphql_env: z.string().min(1).optional(),
     /**
@@ -53,11 +57,13 @@ const ProviderEntrySchema = z
     (data) =>
       data.grpc != null ||
       data.graphql != null ||
+      data.archival != null ||
       data.grpc_env != null ||
-      data.graphql_env != null,
+      data.graphql_env != null ||
+      data.archival_env != null,
     {
       message:
-        "Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env",
+        "Each provider must have at least one of: grpc, graphql, archival, grpc_env, graphql_env, archival_env",
     },
   )
   .refine(
@@ -83,6 +89,7 @@ const ProvidersFileSchema = z.object({
 export type LoadedProviders = {
   grpc: GrpcProviderConfig[];
   graphql: GraphQLProviderConfig[];
+  archival: ArchivalProviderConfig[];
 };
 
 /**
@@ -103,6 +110,7 @@ export function loadProviders(
 
   const grpc: GrpcProviderConfig[] = [];
   const graphql: GraphQLProviderConfig[] = [];
+  const archival: ArchivalProviderConfig[] = [];
 
   for (const entry of parsed.providers) {
     const isPublic = entry.public;
@@ -154,9 +162,24 @@ export function loadProviders(
       const token = resolveToken(entry.graphql_token_header, entry.graphql_token_env, "graphql_token_env");
       graphql.push({ id: entry.id, endpoint: graphqlEndpoint, isPublic, ...(token ? { token } : {}) });
     }
+
+    // ── Archival gRPC endpoint ───────────────────────────────────────────────
+    let archivalEndpoint = entry.archival;
+    if (entry.archival_env != null) {
+      const val = env[entry.archival_env];
+      if (!val) {
+        throw new Error(
+          `Provider "${entry.id}": env var "${entry.archival_env}" (archival_env) is not set`,
+        );
+      }
+      archivalEndpoint = val;
+    }
+    if (archivalEndpoint != null) {
+      archival.push({ id: entry.id, endpoint: archivalEndpoint, isPublic });
+    }
   }
 
-  return { grpc, graphql };
+  return { grpc, graphql, archival };
 }
 
 // ─── Environment schema ───────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 // Minimal subset of the official sui/rpc/v2/ledger_service.proto
 // Source: https://github.com/MystenLabs/sui-apis/blob/main/proto/sui/rpc/v2/ledger_service.proto
-// Only GetServiceInfo is included — that is the only RPC used by the gRPC probe.
+// GetServiceInfo is used by the gRPC probe; GetCheckpoint is used by the archival probe.
 
 syntax = "proto3";
 
@@ -9,6 +9,9 @@ package sui.rpc.v2;
 service LedgerService {
   // Query the service for general information about its current state.
   rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
+
+  // Fetch a single checkpoint by sequence number or digest.
+  rpc GetCheckpoint(GetCheckpointRequest) returns (GetCheckpointResponse);
 }
 
 message GetServiceInfoRequest {}
@@ -34,4 +37,26 @@ message GetServiceInfoResponse {
 
   // Software version of the service.
   optional string server = 8;
+}
+
+message GetCheckpointRequest {
+  // If neither is provided, return the latest checkpoint.
+  oneof checkpoint_id {
+    // The sequence number of the requested checkpoint.
+    uint64 sequence_number = 1;
+
+    // The digest of the requested checkpoint.
+    string digest = 2;
+  }
+}
+
+message GetCheckpointResponse {
+  // Minimal checkpoint envelope — we only need sequence_number to confirm the
+  // archival node returned data. Additional fields are ignored.
+  optional CheckpointSummary checkpoint = 1;
+}
+
+// Minimal checkpoint message — only fields required by the archival probe.
+message CheckpointSummary {
+  optional uint64 sequence_number = 1;
 }

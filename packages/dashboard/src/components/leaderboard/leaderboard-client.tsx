@@ -536,7 +536,7 @@ export function LeaderboardClient() {
   );
 
   const regionOptions: readonly string[] = ["all", ...regions];
-  const typeOptions: readonly string[] = ["all", "grpc", "graphql"];
+  const typeOptions: readonly string[] = ["all", "grpc", "graphql", "archival"];
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (

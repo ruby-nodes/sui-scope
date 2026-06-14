@@ -15,13 +15,15 @@
 
 import { fetchChainHead, probeGrpc } from "./grpc-probe.js";
 import { probeGraphQL } from "./graphql-probe.js";
-import type { GrpcProviderConfig, GraphQLProviderConfig, MeasurementEvent } from "./types.js";
+import { probeArchival } from "./archival-probe.js";
+import type { GrpcProviderConfig, GraphQLProviderConfig, ArchivalProviderConfig, MeasurementEvent } from "./types.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type SchedulerConfig = {
   grpcProviders: GrpcProviderConfig[];
   graphqlProviders: GraphQLProviderConfig[];
+  archivalProviders: ArchivalProviderConfig[];
   region: string;
   probeVersion: string;
   intervalMs: number;
@@ -32,6 +34,7 @@ export type SchedulerDeps = {
   fetchChainHead?: () => Promise<number>;
   probeGrpc?: typeof probeGrpc;
   probeGraphQL?: typeof probeGraphQL;
+  probeArchival?: typeof probeArchival;
   emit?: (event: MeasurementEvent) => void;
 };
 
@@ -60,12 +63,13 @@ export async function runOneCycle(
     fetchChainHead: doFetchChainHead = fetchChainHead,
     probeGrpc: doProbeGrpc = probeGrpc,
     probeGraphQL: doProbeGraphQL = probeGraphQL,
+    probeArchival: doProbeArchival = probeArchival,
     emit = defaultEmit,
   } = deps;
 
   const chainHead = await doFetchChainHead();
 
-  const [grpcResults, graphqlResults] = await Promise.all([
+  const [grpcResults, graphqlResults, archivalResults] = await Promise.all([
     Promise.allSettled(
       config.grpcProviders.map((p) =>
         doProbeGrpc(p, config.region, config.probeVersion, chainHead),
@@ -76,9 +80,14 @@ export async function runOneCycle(
         doProbeGraphQL(p, config.region, config.probeVersion, chainHead),
       ),
     ),
+    Promise.allSettled(
+      config.archivalProviders.map((p) =>
+        doProbeArchival(p, config.region, config.probeVersion, chainHead),
+      ),
+    ),
   ]);
 
-  for (const result of [...grpcResults, ...graphqlResults]) {
+  for (const result of [...grpcResults, ...graphqlResults, ...archivalResults]) {
     if (result.status === "fulfilled") {
       for (const event of result.value) {
         emit(event);

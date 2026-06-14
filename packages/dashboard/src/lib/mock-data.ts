@@ -3,7 +3,7 @@
  * Shape intentionally mirrors the /v1/metrics response the API will serve.
  */
 
-export type EndpointType = "grpc" | "graphql";
+export type EndpointType = "grpc" | "graphql" | "archival";
 
 /** One aggregatable unit: a single probe endpoint for a provider in a region. */
 export interface ProviderMetrics {

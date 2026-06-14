@@ -3,11 +3,13 @@ import type { EndpointType } from "@/lib/mock-data";
 const BADGE_CLASSES: Record<EndpointType, string> = {
   grpc: "bg-grpc-bg text-grpc border-grpc/30",
   graphql: "bg-graphql-bg text-graphql border-graphql/30",
+  archival: "bg-archival-bg text-archival border-archival/30",
 };
 
 const BADGE_LABELS: Record<EndpointType, string> = {
   grpc: "gRPC",
   graphql: "GraphQL",
+  archival: "Archival",
 };
 
 export interface EndpointBadgeProps {
