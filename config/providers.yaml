@@ -15,19 +15,22 @@
 #   Private endpoint fields (URL stored in an env var / Fly secret, not in this file):
 #   grpc_env:     Optional. Name of the env var holding the gRPC "host:port" for this provider.
 #   graphql_env:  Optional. Name of the env var holding the GraphQL full URL for this provider.
-#   archival_env: Optional. Name of the env var holding the archival gRPC "host:port" for this provider.
 #   archival:      Optional. Public archival gRPC endpoint as "host:port" (LedgerService).
 #   archival_env:  Optional. Name of the env var holding the archival "host:port" (private endpoint).
 #
 #   Auth token fields (for providers that require a token header on every request):
-#   grpc_token_header:    Optional. Header/metadata key name for gRPC auth (e.g. "x-token").
-#                         Must be paired with grpc_token_env.
-#   grpc_token_env:       Optional. Name of the env var holding the gRPC token value.
-#                         Must be paired with grpc_token_header.
-#   graphql_token_header: Optional. HTTP header name for GraphQL auth (e.g. "Authorization").
-#                         Must be paired with graphql_token_env.
-#   graphql_token_env:    Optional. Name of the env var holding the GraphQL token value.
-#                         Must be paired with graphql_token_header.
+#   grpc_token_header:      Optional. Header/metadata key name for gRPC auth (e.g. "x-token").
+#                           Must be paired with grpc_token_env.
+#   grpc_token_env:         Optional. Name of the env var holding the gRPC token value.
+#                           Must be paired with grpc_token_header.
+#   graphql_token_header:   Optional. HTTP header name for GraphQL auth (e.g. "Authorization").
+#                           Must be paired with graphql_token_env.
+#   graphql_token_env:      Optional. Name of the env var holding the GraphQL token value.
+#                           Must be paired with graphql_token_header.
+#   archival_token_header:  Optional. Header/metadata key name for archival gRPC auth (e.g. "x-token").
+#                           Must be paired with archival_token_env.
+#   archival_token_env:     Optional. Name of the env var holding the archival token value.
+#                           Must be paired with archival_token_header.
 #
 # Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env, archival, archival_env.
 # Mixing public and private fields on the same provider is allowed (e.g. public grpc + private graphql_env).
@@ -71,3 +74,6 @@ providers:
     graphql_env: "BLOCKPI_GRAPHQL_URL"
     grpc_token_header: "x-token"
     grpc_token_env: "BLOCKPI_GRPC_TOKEN"
+    archival: "sui-archive.blockpi.network:443"
+    archival_token_header: "x-token"
+    archival_token_env: "BLOCKPI_ARCHIVAL_TOKEN"

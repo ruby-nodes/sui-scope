@@ -47,6 +47,13 @@ const ProviderEntrySchema = z
     /** Name of the env var holding the GraphQL auth token value. Must be paired with graphql_token_header. */
     graphql_token_env: z.string().min(1).optional(),
     /**
+     * Header/metadata key name for the archival gRPC auth token (e.g. "x-token").
+     * Must be paired with archival_token_env.
+     */
+    archival_token_header: z.string().min(1).optional(),
+    /** Name of the env var holding the archival gRPC auth token value. Must be paired with archival_token_header. */
+    archival_token_env: z.string().min(1).optional(),
+    /**
      * Whether this provider's endpoint URL is publicly accessible without auth.
      * Defaults to true. Set to false for providers whose URL contains an embedded API key.
      * Metrics are always published; only the URL is withheld when public is false.
@@ -78,6 +85,13 @@ const ProviderEntrySchema = z
       (data.graphql_token_header == null) === (data.graphql_token_env == null),
     {
       message: "graphql_token_header and graphql_token_env must both be set or both be absent",
+    },
+  )
+  .refine(
+    (data) =>
+      (data.archival_token_header == null) === (data.archival_token_env == null),
+    {
+      message: "archival_token_header and archival_token_env must both be set or both be absent",
     },
   );
 
@@ -175,7 +189,8 @@ export function loadProviders(
       archivalEndpoint = val;
     }
     if (archivalEndpoint != null) {
-      archival.push({ id: entry.id, endpoint: archivalEndpoint, isPublic });
+      const token = resolveToken(entry.archival_token_header, entry.archival_token_env, "archival_token_env");
+      archival.push({ id: entry.id, endpoint: archivalEndpoint, isPublic, ...(token ? { token } : {}) });
     }
   }
 
