@@ -100,5 +100,6 @@ providers:
     graphql_env: "QUICKNODE_GRAPHQL_URL"
     grpc_token_header: "x-token"
     grpc_token_env: "QUICKNODE_GRPC_TOKEN"
+    archival: "QUICKNODE_ARCHIVAL_URL"
     archival_token_header: "x-token"
     archival_token_env: "QUICKNODE_ARCHIVAL_TOKEN"
