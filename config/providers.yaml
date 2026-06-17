@@ -49,7 +49,7 @@
 
 providers:
   - id: mystenlab
-    name: "Mysten Labs"
+    name: "Sui Foundation (Public good)"
     public: true
     grpc: "fullnode.mainnet.sui.io:443"
     graphql: "https://graphql.mainnet.sui.io/graphql"

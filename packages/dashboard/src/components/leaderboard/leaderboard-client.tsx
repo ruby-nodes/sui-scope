@@ -24,6 +24,7 @@ type SortKey =
   | "error_rate";
 
 type SortDir = "asc" | "desc";
+type AccessFilter = "all" | "free" | "paid";
 
 /** Aggregated display row: one row per provider × endpoint-type. */
 interface DisplayRow {
@@ -54,6 +55,7 @@ const VALID_SORT_KEYS = new Set<string>([
 
 const DEFAULT_SORT: SortKey = "latency_p50";
 const DEFAULT_DIR: SortDir = "asc";
+const ACCESS_OPTIONS = ["all", "free", "paid"] as const satisfies readonly AccessFilter[];
 
 const TIER_COLOR: Record<Tier, string> = {
   good: "text-tier-good",
@@ -186,6 +188,16 @@ function providerEndpointTypes(provider: ApiProvider): EndpointType[] {
 
 function providerIncludesRegion(provider: ApiProvider, region: string): boolean {
   return provider.regions == null || provider.regions.includes(region);
+}
+
+function providerMatchesAccess(provider: ApiProvider, access: AccessFilter): boolean {
+  if (access === "all") return true;
+  return access === "free" ? provider.public : !provider.public;
+}
+
+function publicMatchesAccess(isPublic: boolean, access: AccessFilter): boolean {
+  if (access === "all") return true;
+  return access === "free" ? isPublic : !isPublic;
 }
 
 function buildScopedOutRows(
@@ -387,6 +399,7 @@ interface FilterPillsProps {
   options: readonly string[];
   selected: string;
   onSelect: (value: string) => void;
+  formatOption?: (value: string) => string;
 }
 
 function FilterPills({
@@ -394,6 +407,7 @@ function FilterPills({
   options,
   selected,
   onSelect,
+  formatOption = (value) => (value === "all" ? "All" : regionLabel(value)),
 }: FilterPillsProps) {
   return (
     <div className="flex items-center gap-2">
@@ -414,7 +428,7 @@ function FilterPills({
                 : "cursor-pointer rounded px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
             }
           >
-            {opt === "all" ? "All" : regionLabel(opt)}
+            {formatOption(opt)}
           </button>
         ))}
       </div>
@@ -521,6 +535,12 @@ export function LeaderboardClient() {
   const [typeFilter, setTypeFilter] = useState<string>(
     () => searchParams.get("type") ?? "all",
   );
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>(() => {
+    const raw = searchParams.get("access");
+    return ACCESS_OPTIONS.includes(raw as AccessFilter)
+      ? (raw as AccessFilter)
+      : "all";
+  });
   const [sortKey, setSortKey] = useState<SortKey>(() => {
     const raw = searchParams.get("sort");
     return raw !== null && VALID_SORT_KEYS.has(raw) ? (raw as SortKey) : DEFAULT_SORT;
@@ -531,10 +551,17 @@ export function LeaderboardClient() {
 
   // ── Sync current filter/sort state back to URL (for sharing/bookmarking) ──
   const pushUrl = useCallback(
-    (region: string, type: string, sort: SortKey, dir: SortDir) => {
+    (
+      region: string,
+      type: string,
+      access: AccessFilter,
+      sort: SortKey,
+      dir: SortDir,
+    ) => {
       const params = new URLSearchParams();
       if (region !== "all") params.set("region", region);
       if (type !== "all") params.set("type", type);
+      if (access !== "all") params.set("access", access);
       if (sort !== DEFAULT_SORT || dir !== DEFAULT_DIR) params.set("sort", sort);
       if (dir !== DEFAULT_DIR) params.set("dir", dir);
       const qs = params.toString();
@@ -550,17 +577,33 @@ export function LeaderboardClient() {
       const newDir: SortDir = k === sortKey && sortDir === "asc" ? "desc" : "asc";
       setSortKey(k);
       setSortDir(newDir);
-      pushUrl(regionFilter, typeFilter, k, newDir);
+      pushUrl(regionFilter, typeFilter, accessFilter, k, newDir);
     },
-    [sortKey, sortDir, regionFilter, typeFilter, pushUrl],
+    [sortKey, sortDir, regionFilter, typeFilter, accessFilter, pushUrl],
   );
 
   // ── Derive display rows ────────────────────────────────────────────────────
+  const filteredProviders = useMemo(
+    () => providers.filter((provider) => providerMatchesAccess(provider, accessFilter)),
+    [providers, accessFilter],
+  );
+
+  const providerById = useMemo(
+    () => new Map(providers.map((provider) => [provider.id, provider])),
+    [providers],
+  );
+
   const displayRows = useMemo(() => {
     let filtered = rows;
+    if (accessFilter !== "all") {
+      filtered = filtered.filter((r) => {
+        const provider = providerById.get(r.provider_id);
+        return publicMatchesAccess(provider?.public ?? r.is_public, accessFilter);
+      });
+    }
     if (regionFilter !== "all") {
       filtered = filtered.filter((r) => {
-        const provider = providers.find((p) => p.id === r.provider_id);
+        const provider = providerById.get(r.provider_id);
         return r.region === regionFilter && (provider == null || providerIncludesRegion(provider, regionFilter));
       });
     }
@@ -571,9 +614,18 @@ export function LeaderboardClient() {
     const scopedOut =
       regionFilter === "all"
         ? []
-        : buildScopedOutRows(providers, regionFilter, typeFilter);
+        : buildScopedOutRows(filteredProviders, regionFilter, typeFilter);
     return sortRows([...aggregated, ...scopedOut], sortKey, sortDir);
-  }, [rows, providers, regionFilter, typeFilter, sortKey, sortDir]);
+  }, [
+    rows,
+    providerById,
+    filteredProviders,
+    accessFilter,
+    regionFilter,
+    typeFilter,
+    sortKey,
+    sortDir,
+  ]);
 
   // ── Rank map — O(1) rank lookup in column render ───────────────────────────
   const rankMap = useMemo(
@@ -612,6 +664,9 @@ export function LeaderboardClient() {
 
   const regionOptions: readonly string[] = ["all", ...regions];
   const typeOptions: readonly string[] = ["all", "grpc", "graphql", "archival"];
+  const accessOptions: readonly string[] = ACCESS_OPTIONS;
+  const accessLabel = (value: string) =>
+    value === "all" ? "All" : value === "free" ? "Free" : "Paid";
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -646,12 +701,25 @@ export function LeaderboardClient() {
 
         <div className="hidden h-4 w-px bg-border sm:block" />
         <FilterPills
+          label="Access"
+          options={accessOptions}
+          selected={accessFilter}
+          formatOption={accessLabel}
+          onSelect={(v) => {
+            const next = v as AccessFilter;
+            setAccessFilter(next);
+            pushUrl(regionFilter, typeFilter, next, sortKey, sortDir);
+          }}
+        />
+
+        <div className="hidden h-4 w-px bg-border sm:block" />
+        <FilterPills
           label="Region"
           options={regionOptions}
           selected={regionFilter}
           onSelect={(v) => {
             setRegionFilter(v);
-            pushUrl(v, typeFilter, sortKey, sortDir);
+            pushUrl(v, typeFilter, accessFilter, sortKey, sortDir);
           }}
         />
 
@@ -664,7 +732,7 @@ export function LeaderboardClient() {
               selected={typeFilter}
               onSelect={(v) => {
                 setTypeFilter(v);
-                pushUrl(regionFilter, v, sortKey, sortDir);
+                pushUrl(regionFilter, v, accessFilter, sortKey, sortDir);
               }}
             />
           </>
@@ -711,11 +779,17 @@ export function LeaderboardClient() {
       {view === "matrix" && (
         <MatrixView
           rows={
-            regionFilter === "all"
-              ? rows
-              : rows.filter((r) => r.region === regionFilter)
+            rows.filter((r) => {
+              const provider = providerById.get(r.provider_id);
+              const matchesAccess = publicMatchesAccess(
+                provider?.public ?? r.is_public,
+                accessFilter,
+              );
+              const matchesRegion = regionFilter === "all" || r.region === regionFilter;
+              return matchesAccess && matchesRegion;
+            })
           }
-          providers={providers}
+          providers={filteredProviders}
           region={regionFilter}
         />
       )}
