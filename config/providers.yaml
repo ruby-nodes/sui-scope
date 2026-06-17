@@ -67,6 +67,11 @@ providers:
     public: true
     grpc: "sui-mainnet.nodeinfra.com:443"
 
+  - id: zan
+    name: "ZAN"
+    public: true
+    graphql: "https://api.zan.top/public/sui-mainnet/graphql"
+
   - id: blockpi
     name: "BlockPI"
     public: false
