@@ -55,6 +55,7 @@ const VALID_SORT_KEYS = new Set<string>([
 
 const DEFAULT_SORT: SortKey = "latency_p50";
 const DEFAULT_DIR: SortDir = "asc";
+const DEFAULT_TYPE_FILTER = "grpc";
 const ACCESS_OPTIONS = ["all", "free", "paid"] as const satisfies readonly AccessFilter[];
 
 const TIER_COLOR: Record<Tier, string> = {
@@ -274,6 +275,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     header: "Provider",
     sortable: false,
     align: "left",
+    className: "min-w-64 whitespace-nowrap",
     render: (row) => (
       <div className="flex items-center gap-1.5">
         <Link
@@ -312,6 +314,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     header: "Type",
     sortable: false,
     align: "left",
+    className: "w-28 whitespace-nowrap",
     render: (row) => <EndpointBadge type={row.endpoint_type} />,
   },
   {
@@ -320,6 +323,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "Median cold-connection latency. Measured as: cold TCP connect + TLS handshake + request write + time-to-first-response-byte. DNS is pre-resolved and excluded. Lower is better.",
     sortable: true,
     align: "right",
+    className: "w-28 whitespace-nowrap",
     render: (row) => row.scoped_out ? (
       <span className="font-mono text-sm text-text-muted">-</span>
     ) : (
@@ -332,6 +336,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "90th-percentile cold-connection latency — only 1-in-10 requests are slower than this. Good indicator of tail behaviour under normal load.",
     sortable: true,
     align: "right",
+    className: "w-28 whitespace-nowrap",
     render: (row) => row.scoped_out ? (
       <span className="font-mono text-sm text-text-muted">-</span>
     ) : (
@@ -344,6 +349,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "99th-percentile cold-connection latency — worst-case tail. Useful for detecting occasional slow outliers that would hurt time-sensitive workloads.",
     sortable: true,
     align: "right",
+    className: "w-28 whitespace-nowrap",
     render: (row) => row.scoped_out ? (
       <span className="font-mono text-sm text-text-muted">-</span>
     ) : (
@@ -352,10 +358,11 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   },
   {
     key: "freshness_avg",
-    header: "Freshness ckpts",
+    header: "Fresh.",
     tooltip: "How far behind the chain head this provider is, in checkpoints (chain_head − provider_latest). Averaged across regions. 0–2 = Good, 3–10 = Degraded, >10 = Poor. Lower is better.",
     sortable: true,
     align: "right",
+    className: "w-20 whitespace-nowrap",
     render: (row) => (
       <span
         className={`font-mono ${TIER_COLOR[freshnessTier(row.freshness_avg)]}`}
@@ -370,6 +377,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "Fraction of probe cycles that returned a successful response over a 1-hour rolling window. Shows worst-case region when multiple regions are aggregated. ≥99.5% = Good, 98–99.5% = Degraded, <98% = Poor.",
     sortable: true,
     align: "right",
+    className: "w-24 whitespace-nowrap",
     render: (row) => (
       <span className={`font-mono ${TIER_COLOR[uptimeTier(row.uptime)]}`}>
         {row.scoped_out ? "-" : fmtPct(row.uptime, 1)}
@@ -382,6 +390,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "Fraction of probe cycles that returned an error over a 5-minute rolling window. Shows worst-case region when aggregated. <0.5% = Good, 0.5–2% = Degraded, >2% = Poor.",
     sortable: true,
     align: "right",
+    className: "w-28 whitespace-nowrap",
     render: (row) => (
       <span
         className={`font-mono ${TIER_COLOR[errorRateTier(row.error_rate)]}`}
@@ -410,11 +419,11 @@ function FilterPills({
   formatOption = (value) => (value === "all" ? "All" : regionLabel(value)),
 }: FilterPillsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-nowrap gap-1">
         {options.map((opt) => (
           <button
             key={opt}
@@ -424,8 +433,8 @@ function FilterPills({
             }}
             className={
               selected === opt
-                ? "cursor-pointer rounded px-3 py-1 text-xs font-medium text-accent bg-accent-dim"
-                : "cursor-pointer rounded px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+                ? "cursor-pointer whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium text-accent bg-accent-dim"
+                : "cursor-pointer whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
             }
           >
             {formatOption(opt)}
@@ -533,7 +542,7 @@ export function LeaderboardClient() {
     () => searchParams.get("region") ?? "all",
   );
   const [typeFilter, setTypeFilter] = useState<string>(
-    () => searchParams.get("type") ?? "all",
+    () => searchParams.get("type") ?? DEFAULT_TYPE_FILTER,
   );
   const [accessFilter, setAccessFilter] = useState<AccessFilter>(() => {
     const raw = searchParams.get("access");
@@ -560,7 +569,7 @@ export function LeaderboardClient() {
     ) => {
       const params = new URLSearchParams();
       if (region !== "all") params.set("region", region);
-      if (type !== "all") params.set("type", type);
+      if (type !== DEFAULT_TYPE_FILTER) params.set("type", type);
       if (access !== "all") params.set("access", access);
       if (sort !== DEFAULT_SORT || dir !== DEFAULT_DIR) params.set("sort", sort);
       if (dir !== DEFAULT_DIR) params.set("dir", dir);
@@ -655,6 +664,7 @@ export function LeaderboardClient() {
             <span className={`font-mono text-xs ${cls}`}>{rank}</span>
           );
         },
+        className: "w-12 whitespace-nowrap",
       },
       checkboxColumn,
       ...METRIC_COLUMNS,
@@ -667,12 +677,22 @@ export function LeaderboardClient() {
   const accessOptions: readonly string[] = ACCESS_OPTIONS;
   const accessLabel = (value: string) =>
     value === "all" ? "All" : value === "free" ? "Free" : "Paid";
+  const regionFilterLabel = (value: string) =>
+    value === "all" ? "All" : value.toUpperCase();
+  const typeFilterLabel = (value: string) =>
+    value === "all"
+      ? "All"
+      : value === "grpc"
+        ? "gRPC"
+        : value === "graphql"
+          ? "GraphQL"
+          : "Archival";
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-3">
       {/* View toggle + filter bar */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-bg-surface px-4 py-3">
+      <div className="flex flex-nowrap items-center gap-3 overflow-x-auto rounded-lg border border-border bg-bg-surface px-4 py-3">
         {/* Table / Matrix tabs */}
         <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
           <button
@@ -717,6 +737,7 @@ export function LeaderboardClient() {
           label="Region"
           options={regionOptions}
           selected={regionFilter}
+          formatOption={regionFilterLabel}
           onSelect={(v) => {
             setRegionFilter(v);
             pushUrl(v, typeFilter, accessFilter, sortKey, sortDir);
@@ -730,6 +751,7 @@ export function LeaderboardClient() {
               label="Type"
               options={typeOptions}
               selected={typeFilter}
+              formatOption={typeFilterLabel}
               onSelect={(v) => {
                 setTypeFilter(v);
                 pushUrl(regionFilter, v, accessFilter, sortKey, sortDir);

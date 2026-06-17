@@ -11,6 +11,7 @@ export interface Column<T> {
   tooltip?: string;
   sortable?: boolean;
   align?: "left" | "right" | "center";
+  className?: string;
   render: (row: T) => ReactNode;
 }
 
@@ -70,6 +71,7 @@ export function DataTable<T,>({
                   col.sortable &&
                     "cursor-pointer select-none hover:text-accent transition-colors",
                   sortKey === col.key && "text-accent",
+                  col.className,
                 )}
               >
                 <span className="inline-flex items-center gap-1">
@@ -119,6 +121,7 @@ export function DataTable<T,>({
                       : col.align === "center"
                         ? "text-center"
                         : "text-left",
+                    col.className,
                   )}
                 >
                   {col.render(row)}
