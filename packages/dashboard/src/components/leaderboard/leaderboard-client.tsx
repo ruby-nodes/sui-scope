@@ -445,6 +445,43 @@ function FilterPills({
   );
 }
 
+interface FilterSelectProps {
+  label: string;
+  options: readonly string[];
+  selected: string;
+  onSelect: (value: string) => void;
+  formatOption: (value: string) => string;
+}
+
+function FilterSelect({
+  label,
+  options,
+  selected,
+  onSelect,
+  formatOption,
+}: FilterSelectProps) {
+  return (
+    <label className="flex shrink-0 items-center gap-2">
+      <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-text-muted">
+        {label}
+      </span>
+      <select
+        value={selected}
+        onChange={(event) => {
+          onSelect(event.target.value);
+        }}
+        className="h-8 cursor-pointer rounded-md border border-border bg-bg-raised px-3 pr-8 text-sm font-medium text-text-primary outline-none transition-colors hover:border-accent/60 focus:border-accent"
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {formatOption(opt)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LeaderboardClient() {
@@ -678,7 +715,7 @@ export function LeaderboardClient() {
   const accessLabel = (value: string) =>
     value === "all" ? "All" : value === "free" ? "Free" : "Paid";
   const regionFilterLabel = (value: string) =>
-    value === "all" ? "All" : value.toUpperCase();
+    value === "all" ? "All" : regionLabel(value);
   const typeFilterLabel = (value: string) =>
     value === "all"
       ? "All"
@@ -733,7 +770,7 @@ export function LeaderboardClient() {
         />
 
         <div className="hidden h-4 w-px bg-border sm:block" />
-        <FilterPills
+        <FilterSelect
           label="Region"
           options={regionOptions}
           selected={regionFilter}
