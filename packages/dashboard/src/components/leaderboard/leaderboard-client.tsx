@@ -8,7 +8,8 @@ import { DataTable, type Column } from "@/components/ui";
 import type { Tier } from "@/components/ui";
 import { EndpointBadge } from "@/components/ui/endpoint-badge";
 import { MatrixView } from "./matrix-view";
-import { fetchMetrics } from "@/lib/api-client";
+import { fetchMetrics, fetchProviders } from "@/lib/api-client";
+import type { ApiProvider } from "@/lib/api-client";
 import { KNOWN_REGIONS, regionLabel } from "@/lib/mock-data";
 import type { EndpointType, ProviderMetrics, Region } from "@/lib/mock-data";
 
@@ -31,6 +32,7 @@ interface DisplayRow {
   provider_name: string;
   is_public: boolean;
   endpoint_type: EndpointType;
+  scoped_out: boolean;
   latency_p50: number | null;
   latency_p90: number | null;
   latency_p99: number | null;
@@ -107,6 +109,10 @@ function fmtMs(v: number | null): string {
   return v === null ? "—" : String(Math.round(v));
 }
 
+function fmtScoped(v: number | null, scopedOut: boolean, fmt: (value: number | null) => string): string {
+  return scopedOut ? "-" : fmt(v);
+}
+
 function fmtCheckpoints(v: number | null): string {
   return v === null ? "—" : String(Math.round(v));
 }
@@ -156,6 +162,7 @@ function aggregate(rows: ProviderMetrics[]): DisplayRow[] {
       provider_name: first.provider_name,
       is_public: first.is_public,
       endpoint_type: first.endpoint_type,
+      scoped_out: false,
       latency_p50: avgOrNull(g.map((r) => r.latency_p50)),
       latency_p90: avgOrNull(g.map((r) => r.latency_p90)),
       latency_p99: avgOrNull(g.map((r) => r.latency_p99)),
@@ -163,6 +170,47 @@ function aggregate(rows: ProviderMetrics[]): DisplayRow[] {
       uptime: minOrNull(g.map((r) => r.uptime)),
       error_rate: maxOrNull(g.map((r) => r.error_rate)),
     };
+  });
+}
+
+function providerEndpointTypes(provider: ApiProvider): EndpointType[] {
+  if (provider.endpoint_types != null && provider.endpoint_types.length > 0) {
+    return provider.endpoint_types;
+  }
+  const types: EndpointType[] = [];
+  if (provider.grpc != null) types.push("grpc");
+  if (provider.graphql != null) types.push("graphql");
+  if (provider.archival != null) types.push("archival");
+  return types;
+}
+
+function providerIncludesRegion(provider: ApiProvider, region: string): boolean {
+  return provider.regions == null || provider.regions.includes(region);
+}
+
+function buildScopedOutRows(
+  providers: ApiProvider[],
+  region: string,
+  typeFilter: string,
+): DisplayRow[] {
+  return providers.flatMap((provider) => {
+    if (providerIncludesRegion(provider, region)) return [];
+    return providerEndpointTypes(provider)
+      .filter((type) => typeFilter === "all" || type === typeFilter)
+      .map((type) => ({
+        key: `${provider.id}-${type}`,
+        provider_id: provider.id,
+        provider_name: provider.name,
+        is_public: provider.public,
+        endpoint_type: type,
+        scoped_out: true,
+        latency_p50: null,
+        latency_p90: null,
+        latency_p99: null,
+        freshness_avg: null,
+        uptime: null,
+        error_rate: null,
+      }));
   });
 }
 
@@ -260,7 +308,11 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "Median cold-connection latency. Measured as: cold TCP connect + TLS handshake + request write + time-to-first-response-byte. DNS is pre-resolved and excluded. Lower is better.",
     sortable: true,
     align: "right",
-    render: (row) => <LatencyCell value={row.latency_p50} />,
+    render: (row) => row.scoped_out ? (
+      <span className="font-mono text-sm text-text-muted">-</span>
+    ) : (
+      <LatencyCell value={row.latency_p50} />
+    ),
   },
   {
     key: "latency_p90",
@@ -268,7 +320,11 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "90th-percentile cold-connection latency — only 1-in-10 requests are slower than this. Good indicator of tail behaviour under normal load.",
     sortable: true,
     align: "right",
-    render: (row) => <LatencyCell value={row.latency_p90} />,
+    render: (row) => row.scoped_out ? (
+      <span className="font-mono text-sm text-text-muted">-</span>
+    ) : (
+      <LatencyCell value={row.latency_p90} />
+    ),
   },
   {
     key: "latency_p99",
@@ -276,7 +332,11 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     tooltip: "99th-percentile cold-connection latency — worst-case tail. Useful for detecting occasional slow outliers that would hurt time-sensitive workloads.",
     sortable: true,
     align: "right",
-    render: (row) => <LatencyCell value={row.latency_p99} />,
+    render: (row) => row.scoped_out ? (
+      <span className="font-mono text-sm text-text-muted">-</span>
+    ) : (
+      <LatencyCell value={row.latency_p99} />
+    ),
   },
   {
     key: "freshness_avg",
@@ -288,7 +348,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
       <span
         className={`font-mono ${TIER_COLOR[freshnessTier(row.freshness_avg)]}`}
       >
-        {fmtCheckpoints(row.freshness_avg)}
+        {fmtScoped(row.freshness_avg, row.scoped_out, fmtCheckpoints)}
       </span>
     ),
   },
@@ -300,7 +360,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
     align: "right",
     render: (row) => (
       <span className={`font-mono ${TIER_COLOR[uptimeTier(row.uptime)]}`}>
-        {fmtPct(row.uptime, 1)}
+        {row.scoped_out ? "-" : fmtPct(row.uptime, 1)}
       </span>
     ),
   },
@@ -314,7 +374,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
       <span
         className={`font-mono ${TIER_COLOR[errorRateTier(row.error_rate)]}`}
       >
-        {fmtPct(row.error_rate, 2)}
+        {row.scoped_out ? "-" : fmtPct(row.error_rate, 2)}
       </span>
     ),
   },
@@ -366,16 +426,23 @@ function FilterPills({
 
 export function LeaderboardClient() {
   const [rows, setRows] = useState<ProviderMetrics[]>([]);
+  const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [regions, setRegions] = useState<readonly Region[]>(KNOWN_REGIONS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    fetchMetrics()
-      .then((data) => {
+    Promise.all([fetchMetrics(), fetchProviders()])
+      .then(([data, providerData]) => {
         if (cancelled) return;
         setRows(data);
-        const seen = [...new Set(data.map((m) => m.region))] as Region[];
+        setProviders(providerData);
+        const seen = [
+          ...new Set([
+            ...data.map((m) => m.region),
+            ...providerData.flatMap((p) => p.regions ?? []),
+          ]),
+        ] as Region[];
         setRegions(seen.length > 0 ? seen : KNOWN_REGIONS);
       })
       .catch(() => {
@@ -492,13 +559,21 @@ export function LeaderboardClient() {
   const displayRows = useMemo(() => {
     let filtered = rows;
     if (regionFilter !== "all") {
-      filtered = filtered.filter((r) => r.region === regionFilter);
+      filtered = filtered.filter((r) => {
+        const provider = providers.find((p) => p.id === r.provider_id);
+        return r.region === regionFilter && (provider == null || providerIncludesRegion(provider, regionFilter));
+      });
     }
     if (typeFilter !== "all") {
       filtered = filtered.filter((r) => r.endpoint_type === typeFilter);
     }
-    return sortRows(aggregate(filtered), sortKey, sortDir);
-  }, [rows, regionFilter, typeFilter, sortKey, sortDir]);
+    const aggregated = aggregate(filtered);
+    const scopedOut =
+      regionFilter === "all"
+        ? []
+        : buildScopedOutRows(providers, regionFilter, typeFilter);
+    return sortRows([...aggregated, ...scopedOut], sortKey, sortDir);
+  }, [rows, providers, regionFilter, typeFilter, sortKey, sortDir]);
 
   // ── Rank map — O(1) rank lookup in column render ───────────────────────────
   const rankMap = useMemo(
@@ -569,18 +644,19 @@ export function LeaderboardClient() {
           </button>
         </div>
 
+        <div className="hidden h-4 w-px bg-border sm:block" />
+        <FilterPills
+          label="Region"
+          options={regionOptions}
+          selected={regionFilter}
+          onSelect={(v) => {
+            setRegionFilter(v);
+            pushUrl(v, typeFilter, sortKey, sortDir);
+          }}
+        />
+
         {view === "table" && (
           <>
-            <div className="hidden h-4 w-px bg-border sm:block" />
-            <FilterPills
-              label="Region"
-              options={regionOptions}
-              selected={regionFilter}
-              onSelect={(v) => {
-                setRegionFilter(v);
-                pushUrl(v, typeFilter, sortKey, sortDir);
-              }}
-            />
             <div className="hidden h-4 w-px bg-border sm:block" />
             <FilterPills
               label="Type"
@@ -632,7 +708,17 @@ export function LeaderboardClient() {
       )}
 
       {/* Matrix heatmap view */}
-      {view === "matrix" && <MatrixView rows={rows} />}
+      {view === "matrix" && (
+        <MatrixView
+          rows={
+            regionFilter === "all"
+              ? rows
+              : rows.filter((r) => r.region === regionFilter)
+          }
+          providers={providers}
+          region={regionFilter}
+        />
+      )}
 
       {/* Tier legend */}
       <div className="rounded-lg border border-border-subtle bg-bg-surface/50 px-4 py-2.5 text-xs text-text-muted">

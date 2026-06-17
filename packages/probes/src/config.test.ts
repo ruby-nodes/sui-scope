@@ -232,6 +232,94 @@ providers:
     expect(result.grpc[0]?.isPublic).toBe(true);
   });
 
+  it("keeps region-restricted providers in included regions", () => {
+    const filePath = writeYaml(
+      "regions-included.yaml",
+      `
+providers:
+  - id: regional
+    name: "Regional Provider"
+    grpc: "regional.example.com:443"
+    regions:
+      - iad
+      - fra
+`,
+    );
+
+    const result = loadProviders(filePath, {}, "fra");
+
+    expect(result.grpc.map((p) => p.id)).toEqual(["regional"]);
+  });
+
+  it("skips region-restricted providers in excluded regions", () => {
+    const filePath = writeYaml(
+      "regions-excluded.yaml",
+      `
+providers:
+  - id: regional
+    name: "Regional Provider"
+    grpc: "regional.example.com:443"
+    graphql: "https://regional.example.com/graphql"
+    regions:
+      - iad
+      - fra
+`,
+    );
+
+    const result = loadProviders(filePath, {}, "sin");
+
+    expect(result.grpc).toHaveLength(0);
+    expect(result.graphql).toHaveLength(0);
+  });
+
+  it("keeps unrestricted providers in every region", () => {
+    const filePath = writeYaml(
+      "regions-unrestricted.yaml",
+      `
+providers:
+  - id: global
+    name: "Global Provider"
+    grpc: "global.example.com:443"
+`,
+    );
+
+    const result = loadProviders(filePath, {}, "sin");
+
+    expect(result.grpc.map((p) => p.id)).toEqual(["global"]);
+  });
+
+  it("throws when regions is empty", () => {
+    const filePath = writeYaml(
+      "regions-empty.yaml",
+      `
+providers:
+  - id: bad
+    name: "Bad"
+    grpc: "bad.example.com:443"
+    regions: []
+`,
+    );
+
+    expect(() => loadProviders(filePath)).toThrow();
+  });
+
+  it("throws when regions contains duplicates", () => {
+    const filePath = writeYaml(
+      "regions-duplicates.yaml",
+      `
+providers:
+  - id: bad
+    name: "Bad"
+    grpc: "bad.example.com:443"
+    regions:
+      - iad
+      - iad
+`,
+    );
+
+    expect(() => loadProviders(filePath)).toThrow(/duplicate/);
+  });
+
   it("resolves grpc token from env and attaches it to the config", () => {
     const filePath = writeYaml(
       "grpc-token.yaml",

@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 
+import type { ApiProvider } from "@/lib/api-client";
 import type { ProviderMetrics } from "@/lib/mock-data";
+import type { EndpointType } from "@/lib/mock-data";
 import type { Tier } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface EndpointSlice {
+  scopedOut: boolean;
   p50: number | null;
   uptime: number | null;
   error_rate: number | null;
@@ -63,17 +66,34 @@ function maxOf(vals: (number | null)[]): number | null {
   return valid.length === 0 ? null : Math.max(...valid);
 }
 
-function fmtMs(v: number | null): string {
+function fmtMs(v: number | null, scopedOut = false): string {
+  if (scopedOut) return "-";
   return v === null ? "—" : `${Math.round(v)} ms`;
 }
 
-function fmtPct(v: number | null, decimals = 1): string {
+function fmtPct(v: number | null, decimals = 1, scopedOut = false): string {
+  if (scopedOut) return "-";
   return v === null ? "—" : `${(v * 100).toFixed(decimals)}%`;
+}
+
+function providerEndpointTypes(provider: ApiProvider): EndpointType[] {
+  if (provider.endpoint_types != null && provider.endpoint_types.length > 0) {
+    return provider.endpoint_types;
+  }
+  const types: EndpointType[] = [];
+  if (provider.grpc != null) types.push("grpc");
+  if (provider.graphql != null) types.push("graphql");
+  if (provider.archival != null) types.push("archival");
+  return types;
 }
 
 // ─── Build matrix ─────────────────────────────────────────────────────────────
 
-function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
+function buildMatrix(
+  raw: ProviderMetrics[],
+  providers: ApiProvider[],
+  region: string,
+): MatrixRow[] {
   const grouped = new Map<
     string,
     { name: string; grpc: ProviderMetrics[]; graphql: ProviderMetrics[]; archival: ProviderMetrics[] }
@@ -91,10 +111,39 @@ function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
     grouped.get(r.provider_id)![r.endpoint_type].push(r);
   }
 
+  if (region !== "all") {
+    for (const provider of providers) {
+      if (provider.regions == null || provider.regions.includes(region)) {
+        continue;
+      }
+      if (!grouped.has(provider.id)) {
+        grouped.set(provider.id, {
+          name: provider.name,
+          grpc: [],
+          graphql: [],
+          archival: [],
+        });
+      }
+    }
+  }
+
   return Array.from(grouped.entries()).map(([id, g]) => {
-    function summarize(slice: ProviderMetrics[]): EndpointSlice | null {
+    const provider = providers.find((p) => p.id === id);
+    const scopedOut = region !== "all" && provider?.regions != null && !provider.regions.includes(region);
+    const endpointTypes = provider != null ? providerEndpointTypes(provider) : [];
+
+    function summarize(type: EndpointType, slice: ProviderMetrics[]): EndpointSlice | null {
+      if (scopedOut && endpointTypes.includes(type)) {
+        return {
+          scopedOut: true,
+          p50: null,
+          uptime: null,
+          error_rate: null,
+        };
+      }
       if (slice.length === 0) return null;
       return {
+        scopedOut: false,
         p50: avg(slice.map((r) => r.latency_p50)),
         uptime: minOf(slice.map((r) => r.uptime)),
         error_rate: maxOf(slice.map((r) => r.error_rate)),
@@ -103,9 +152,9 @@ function buildMatrix(raw: ProviderMetrics[]): MatrixRow[] {
     return {
       provider_id: id,
       provider_name: g.name,
-      grpc: summarize(g.grpc),
-      graphql: summarize(g.graphql),
-      archival: summarize(g.archival),
+      grpc: summarize("grpc", g.grpc),
+      graphql: summarize("graphql", g.graphql),
+      archival: summarize("archival", g.archival),
     };
   });
 }
@@ -188,10 +237,12 @@ function GroupHeader({ label, color, border, colSpan }: GroupHeaderProps) {
 
 export interface MatrixViewProps {
   rows: ProviderMetrics[];
+  providers: ApiProvider[];
+  region: string;
 }
 
-export function MatrixView({ rows }: MatrixViewProps) {
-  const matrix = buildMatrix(rows);
+export function MatrixView({ rows, providers, region }: MatrixViewProps) {
+  const matrix = buildMatrix(rows, providers, region);
 
   if (matrix.length === 0) {
     return (
@@ -287,17 +338,17 @@ export function MatrixView({ rows }: MatrixViewProps) {
                 <>
                   <MetricCell
                     tier={latencyTier(row.grpc.p50)}
-                    value={fmtMs(row.grpc.p50)}
+                    value={fmtMs(row.grpc.p50, row.grpc.scopedOut)}
                     label="gRPC p50 latency"
                   />
                   <MetricCell
                     tier={uptimeTier(row.grpc.uptime)}
-                    value={fmtPct(row.grpc.uptime)}
+                    value={fmtPct(row.grpc.uptime, 1, row.grpc.scopedOut)}
                     label="gRPC uptime"
                   />
                   <MetricCell
                     tier={errorRateTier(row.grpc.error_rate)}
-                    value={fmtPct(row.grpc.error_rate, 2)}
+                    value={fmtPct(row.grpc.error_rate, 2, row.grpc.scopedOut)}
                     label="gRPC error rate"
                   />
                 </>
@@ -314,17 +365,17 @@ export function MatrixView({ rows }: MatrixViewProps) {
                 <>
                   <MetricCell
                     tier={latencyTier(row.graphql.p50)}
-                    value={fmtMs(row.graphql.p50)}
+                    value={fmtMs(row.graphql.p50, row.graphql.scopedOut)}
                     label="GraphQL p50 latency"
                   />
                   <MetricCell
                     tier={uptimeTier(row.graphql.uptime)}
-                    value={fmtPct(row.graphql.uptime)}
+                    value={fmtPct(row.graphql.uptime, 1, row.graphql.scopedOut)}
                     label="GraphQL uptime"
                   />
                   <MetricCell
                     tier={errorRateTier(row.graphql.error_rate)}
-                    value={fmtPct(row.graphql.error_rate, 2)}
+                    value={fmtPct(row.graphql.error_rate, 2, row.graphql.scopedOut)}
                     label="GraphQL error rate"
                   />
                 </>
@@ -341,17 +392,17 @@ export function MatrixView({ rows }: MatrixViewProps) {
                 <>
                   <MetricCell
                     tier={latencyTier(row.archival.p50)}
-                    value={fmtMs(row.archival.p50)}
+                    value={fmtMs(row.archival.p50, row.archival.scopedOut)}
                     label="Archival p50 latency"
                   />
                   <MetricCell
                     tier={uptimeTier(row.archival.uptime)}
-                    value={fmtPct(row.archival.uptime)}
+                    value={fmtPct(row.archival.uptime, 1, row.archival.scopedOut)}
                     label="Archival uptime"
                   />
                   <MetricCell
                     tier={errorRateTier(row.archival.error_rate)}
-                    value={fmtPct(row.archival.error_rate, 2)}
+                    value={fmtPct(row.archival.error_rate, 2, row.archival.scopedOut)}
                     label="Archival error rate"
                   />
                 </>

@@ -75,7 +75,7 @@ function createNetworkEmit(
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const env = loadEnv();
   const providersPath = env.PROVIDERS_YAML_PATH ?? resolveDefaultProvidersPath();
-  const providers = loadProviders(providersPath);
+  const providers = loadProviders(providersPath, process.env, env.REGION);
   const probeVersion = readProbeVersion();
 
   console.error(

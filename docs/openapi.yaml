@@ -33,9 +33,8 @@ paths:
       operationId: listProviders
       summary: List all providers
       description: |
-        Returns every provider in the curated registry, including their public
-        endpoint addresses. Only providers with freely accessible public
-        endpoints appear here.
+        Returns every provider in the curated registry. Public providers include
+        endpoint addresses; private providers include metadata but omit URLs.
       tags: [providers]
       responses:
         "200":
@@ -48,17 +47,27 @@ paths:
                 providers:
                   - id: mysten
                     name: Mysten Labs
+                    public: true
+                    endpoint_types: [grpc, graphql, archival]
                     grpc: fullnode.mainnet.sui.io:443
                     graphql: https://sui-mainnet.mystenlabs.com/graphql
+                    archival: archive.mainnet.sui.io:443
                   - id: ankr
                     name: Ankr
+                    public: true
+                    endpoint_types: [grpc, graphql]
                     grpc: sui.grpc.ankr.com:443
                     graphql: https://rpc.ankr.com/sui/graphql
-                  - id: 01node
-                    name: 01node
-                    grpc: sui.01.ro:443
+                  - id: regional-provider
+                    name: Regional Provider
+                    public: true
+                    endpoint_types: [grpc]
+                    regions: [iad, fra]
+                    grpc: sui.example.com:443
                   - id: triton-one
                     name: Triton One
+                    public: true
+                    endpoint_types: [grpc]
                     grpc: sui-mainnet.nodeinfra.com:443
         "429":
           $ref: "#/components/responses/RateLimited"
@@ -209,7 +218,7 @@ components:
   schemas:
     Provider:
       type: object
-      required: [id, name]
+      required: [id, name, public, endpoint_types]
       properties:
         id:
           type: string
@@ -219,6 +228,23 @@ components:
           type: string
           description: Human-readable display name.
           example: Mysten Labs
+        public:
+          type: boolean
+          description: Whether endpoint URLs are publicly accessible and included in this response.
+          example: true
+        endpoint_types:
+          type: array
+          description: Endpoint categories configured for this provider. Safe to expose for private providers.
+          items:
+            type: string
+            enum: [grpc, graphql, archival]
+          example: [grpc, graphql]
+        regions:
+          type: array
+          description: Fly.io probe region allowlist. Absent means all deployed probe regions.
+          items:
+            type: string
+          example: [iad, fra]
         grpc:
           type: string
           description: Public gRPC endpoint as `host:port`. Absent if the provider does not expose gRPC.
@@ -228,6 +254,10 @@ components:
           format: uri
           description: Public GraphQL endpoint URL. Absent if the provider does not expose GraphQL.
           example: https://sui-mainnet.mystenlabs.com/graphql
+        archival:
+          type: string
+          description: Public archival gRPC endpoint as `host:port`. Absent if the provider does not expose archival.
+          example: archive.mainnet.sui.io:443
 
     ProvidersResponse:
       type: object

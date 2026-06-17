@@ -14,7 +14,7 @@ const mockCh = { insert: mockInsert, query: mockQuery } as unknown as ClickHouse
 const TEST_SECRET = "test-secret-abc";
 
 const TEST_PROVIDERS: Provider[] = [
-  { id: "test-provider", name: "Test Provider", grpc: "example.com:443", public: true },
+  { id: "test-provider", name: "Test Provider", grpc: "example.com:443", public: true, regions: ["iad", "fra"] },
   { id: "other-provider", name: "Other Provider", graphql: "https://other.example.com/graphql", public: true },
 ];
 
@@ -139,6 +139,7 @@ describe("api", () => {
       const json = await res.json() as { providers: Provider[] };
       expect(json.providers).toHaveLength(2);
       expect(json.providers[0]?.id).toBe("test-provider");
+      expect(json.providers[0]?.regions).toEqual(["iad", "fra"]);
     });
   });
 
@@ -221,4 +222,3 @@ describe("api", () => {
     });
   });
 });
-

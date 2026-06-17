@@ -59,6 +59,11 @@ const ProviderEntrySchema = z
      * Metrics are always published; only the URL is withheld when public is false.
      */
     public: z.boolean().default(true),
+    /**
+     * Optional provider-wide list of probe regions where this provider should be measured.
+     * Omitted means all deployed probe regions.
+     */
+    regions: z.array(z.string().min(1)).min(1).optional(),
   })
   .refine(
     (data) =>
@@ -93,6 +98,12 @@ const ProviderEntrySchema = z
     {
       message: "archival_token_header and archival_token_env must both be set or both be absent",
     },
+  )
+  .refine(
+    (data) => data.regions == null || new Set(data.regions).size === data.regions.length,
+    {
+      message: "regions must not contain duplicate values",
+    },
   );
 
 const ProvidersFileSchema = z.object({
@@ -118,6 +129,7 @@ export type LoadedProviders = {
 export function loadProviders(
   filePath: string,
   env: NodeJS.ProcessEnv = process.env,
+  region?: string,
 ): LoadedProviders {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = ProvidersFileSchema.parse(loadYaml(raw));
@@ -127,6 +139,10 @@ export function loadProviders(
   const archival: ArchivalProviderConfig[] = [];
 
   for (const entry of parsed.providers) {
+    if (region != null && entry.regions != null && !entry.regions.includes(region)) {
+      continue;
+    }
+
     const isPublic = entry.public;
 
     // ── Resolve token helper ─────────────────────────────────────────────────

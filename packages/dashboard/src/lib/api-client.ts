@@ -5,7 +5,7 @@
  * The base URL is read from NEXT_PUBLIC_API_URL at call time.
  */
 
-import type { ProviderMetrics, TimeSeriesMap, TimeSeriesPoint } from "@/lib/mock-data";
+import type { EndpointType, ProviderMetrics, TimeSeriesMap, TimeSeriesPoint } from "@/lib/mock-data";
 
 // ─── Re-exported types ────────────────────────────────────────────────────────
 
@@ -16,8 +16,12 @@ export type { ProviderMetrics, TimeSeriesMap, TimeSeriesPoint };
 export interface ApiProvider {
   id: string;
   name: string;
+  public: boolean;
+  endpoint_types?: EndpointType[];
+  regions?: string[];
   grpc?: string;
   graphql?: string;
+  archival?: string;
 }
 
 // ─── API response shapes ──────────────────────────────────────────────────────

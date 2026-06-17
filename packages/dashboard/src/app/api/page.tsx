@@ -348,8 +348,8 @@ export default function ApiReferencePage() {
               summary="List all providers"
             >
               <p className="text-text-secondary">
-                Returns every provider in the curated registry with their public
-                endpoint addresses.
+                Returns every provider in the curated registry. Public providers
+                include endpoint addresses; private providers omit URLs.
               </p>
 
               <div className="space-y-2">
@@ -383,6 +383,24 @@ export default function ApiReferencePage() {
                         description: "Human-readable display name.",
                       },
                       {
+                        field: "public",
+                        type: "boolean",
+                        description:
+                          "Whether endpoint URLs are publicly accessible and included in this response.",
+                      },
+                      {
+                        field: "endpoint_types",
+                        type: "string[]",
+                        description:
+                          "Configured endpoint categories: grpc, graphql, and/or archival.",
+                      },
+                      {
+                        field: "regions",
+                        type: "string[]?",
+                        description:
+                          "Fly.io probe region allowlist. Absent means all deployed probe regions.",
+                      },
+                      {
                         field: "grpc",
                         type: "string?",
                         description:
@@ -394,6 +412,12 @@ export default function ApiReferencePage() {
                         description:
                           "Public GraphQL endpoint URL. Absent if the provider does not expose GraphQL.",
                       },
+                      {
+                        field: "archival",
+                        type: "string?",
+                        description:
+                          'Public archival gRPC endpoint as "host:port". Absent if the provider does not expose archival.',
+                      },
                     ]}
                   />
                   <CodeBlock>{`GET /v1/providers
@@ -403,19 +427,27 @@ export default function ApiReferencePage() {
     {
       "id": "mysten",
       "name": "Mysten Labs",
+      "public": true,
+      "endpoint_types": ["grpc", "graphql", "archival"],
       "grpc": "fullnode.mainnet.sui.io:443",
-      "graphql": "https://sui-mainnet.mystenlabs.com/graphql"
+      "graphql": "https://sui-mainnet.mystenlabs.com/graphql",
+      "archival": "archive.mainnet.sui.io:443"
     },
     {
       "id": "ankr",
       "name": "Ankr",
+      "public": true,
+      "endpoint_types": ["grpc", "graphql"],
       "grpc": "sui.grpc.ankr.com:443",
       "graphql": "https://rpc.ankr.com/sui/graphql"
     },
     {
-      "id": "triton-one",
-      "name": "Triton One",
-      "grpc": "sui-mainnet.nodeinfra.com:443"
+      "id": "regional-provider",
+      "name": "Regional Provider",
+      "public": true,
+      "endpoint_types": ["grpc"],
+      "regions": ["iad", "fra"],
+      "grpc": "sui.example.com:443"
     }
   ]
 }`}</CodeBlock>
