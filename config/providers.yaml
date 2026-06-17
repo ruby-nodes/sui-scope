@@ -6,6 +6,11 @@
 #   id:          Stable identifier used in metric events and API responses.
 #   name:        Human-readable display name.
 #   public:      Optional boolean. Default: true. Set to false for auth-gated endpoints.
+#   regions:     Optional provider-wide list of Fly probe region codes to measure from.
+#                Omitted means all deployed probe regions. Example:
+#                  regions:
+#                    - iad
+#                    - fra
 #
 #   Public endpoint fields (URL stored directly in this file — never put secrets here):
 #   grpc:        Optional. Public gRPC endpoint as "host:port".
@@ -39,8 +44,8 @@
 #   - Metrics are still published on the leaderboard.
 #   - The endpoint URL is NOT exposed in the public API or dashboard.
 #   - Set the corresponding Fly secrets before deploying probes:
-#       fly secrets set MY_PROVIDER_GRAPHQL_URL="https://..." -a sui-scope-probes
-#       fly secrets set MY_PROVIDER_GRAPHQL_TOKEN="Bearer abc123" -a sui-scope-probes
+#       fly secrets set MY_PROVIDER_GRAPHQL_URL="https://..." -a suiscope-probes
+#       fly secrets set MY_PROVIDER_GRAPHQL_TOKEN="Bearer abc123" -a suiscope-probes
 
 providers:
   - id: mystenlab
@@ -69,8 +74,10 @@ providers:
 
   - id: zan
     name: "ZAN"
-    public: true
+    public: false
     graphql: "https://api.zan.top/public/sui-mainnet/graphql"
+    regions:
+      - sin
 
   - id: blockpi
     name: "BlockPI"
@@ -82,3 +89,16 @@ providers:
     archival: "sui-archive.blockpi.network:443"
     archival_token_header: "x-token"
     archival_token_env: "BLOCKPI_ARCHIVAL_TOKEN"
+
+  - id: quicknode
+    name: "Quicknode"
+    public: false
+    regions: 
+      - fra
+      - iad
+    grpc_env: "QUICKNODE_GRPC_URL"
+    graphql_env: "QUICKNODE_GRAPHQL_URL"
+    grpc_token_header: "x-token"
+    grpc_token_env: "QUICKNODE_GRPC_TOKEN"
+    archival_token_header: "x-token"
+    archival_token_env: "QUICKNODE_ARCHIVAL_TOKEN"
