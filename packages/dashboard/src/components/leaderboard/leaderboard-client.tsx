@@ -143,12 +143,7 @@ function maxOrNull(values: (number | null)[]): number | null {
   return valid.length === 0 ? null : Math.max(...valid);
 }
 
-/**
- * Collapse a filtered slice of raw rows into one DisplayRow per
- * provider × endpoint-type. Latency and freshness are averaged across
- * regions; uptime shows the worst-case region; error_rate shows the
- * worst-case region.
- */
+/** Collapse a filtered slice of raw rows into one DisplayRow per provider × endpoint-type. */
 function aggregate(rows: ProviderMetrics[]): DisplayRow[] {
   const groups = new Map<string, ProviderMetrics[]>();
   for (const row of rows) {
@@ -359,7 +354,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "freshness_avg",
     header: "Fresh.",
-    tooltip: "How far behind the chain head this provider is, in checkpoints (chain_head − provider_latest). Averaged across regions. 0–2 = Good, 3–10 = Degraded, >10 = Poor. Lower is better.",
+    tooltip: "How far behind the chain head this provider is, in checkpoints (chain_head − provider_latest). 0–2 = Good, 3–10 = Degraded, >10 = Poor. Lower is better.",
     sortable: true,
     align: "right",
     className: "w-20 whitespace-nowrap",
@@ -374,7 +369,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "uptime",
     header: "Uptime",
-    tooltip: "Fraction of probe cycles that returned a successful response over a 1-hour rolling window. Shows worst-case region when multiple regions are aggregated. ≥99.5% = Good, 98–99.5% = Degraded, <98% = Poor.",
+    tooltip: "Fraction of probe cycles that returned a successful response over a 1-hour rolling window. ≥99.5% = Good, 98–99.5% = Degraded, <98% = Poor.",
     sortable: true,
     align: "right",
     className: "w-24 whitespace-nowrap",
@@ -387,7 +382,7 @@ const METRIC_COLUMNS: Column<DisplayRow>[] = [
   {
     key: "error_rate",
     header: "Error Rate",
-    tooltip: "Fraction of probe cycles that returned an error over a 5-minute rolling window. Shows worst-case region when aggregated. <0.5% = Good, 0.5–2% = Degraded, >2% = Poor.",
+    tooltip: "Fraction of probe cycles that returned an error over a 5-minute rolling window. <0.5% = Good, 0.5–2% = Degraded, >2% = Poor.",
     sortable: true,
     align: "right",
     className: "w-28 whitespace-nowrap",
@@ -575,9 +570,16 @@ export function LeaderboardClient() {
   );
 
   // ── Filter/sort state — local, initialized from URL ───────────────────────
+  const defaultRegion = regions[0] ?? KNOWN_REGIONS[0] ?? "iad";
   const [regionFilter, setRegionFilter] = useState<string>(
-    () => searchParams.get("region") ?? "all",
+    () => {
+      const requested = searchParams.get("region");
+      return requested != null && requested !== "all" ? requested : defaultRegion;
+    },
   );
+  const activeRegionFilter = regions.includes(regionFilter as Region)
+    ? regionFilter
+    : defaultRegion;
   const [typeFilter, setTypeFilter] = useState<string>(
     () => searchParams.get("type") ?? DEFAULT_TYPE_FILTER,
   );
@@ -605,7 +607,7 @@ export function LeaderboardClient() {
       dir: SortDir,
     ) => {
       const params = new URLSearchParams();
-      if (region !== "all") params.set("region", region);
+      if (region !== defaultRegion) params.set("region", region);
       if (type !== DEFAULT_TYPE_FILTER) params.set("type", type);
       if (access !== "all") params.set("access", access);
       if (sort !== DEFAULT_SORT || dir !== DEFAULT_DIR) params.set("sort", sort);
@@ -613,7 +615,7 @@ export function LeaderboardClient() {
       const qs = params.toString();
       router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
     },
-    [pathname, router],
+    [defaultRegion, pathname, router],
   );
 
   const handleSort = useCallback(
@@ -623,9 +625,9 @@ export function LeaderboardClient() {
       const newDir: SortDir = k === sortKey && sortDir === "asc" ? "desc" : "asc";
       setSortKey(k);
       setSortDir(newDir);
-      pushUrl(regionFilter, typeFilter, accessFilter, k, newDir);
+      pushUrl(activeRegionFilter, typeFilter, accessFilter, k, newDir);
     },
-    [sortKey, sortDir, regionFilter, typeFilter, accessFilter, pushUrl],
+    [sortKey, sortDir, activeRegionFilter, typeFilter, accessFilter, pushUrl],
   );
 
   // ── Derive display rows ────────────────────────────────────────────────────
@@ -647,27 +649,22 @@ export function LeaderboardClient() {
         return publicMatchesAccess(provider?.public ?? r.is_public, accessFilter);
       });
     }
-    if (regionFilter !== "all") {
-      filtered = filtered.filter((r) => {
-        const provider = providerById.get(r.provider_id);
-        return r.region === regionFilter && (provider == null || providerIncludesRegion(provider, regionFilter));
-      });
-    }
+    filtered = filtered.filter((r) => {
+      const provider = providerById.get(r.provider_id);
+      return r.region === activeRegionFilter && (provider == null || providerIncludesRegion(provider, activeRegionFilter));
+    });
     if (typeFilter !== "all") {
       filtered = filtered.filter((r) => r.endpoint_type === typeFilter);
     }
     const aggregated = aggregate(filtered);
-    const scopedOut =
-      regionFilter === "all"
-        ? []
-        : buildScopedOutRows(filteredProviders, regionFilter, typeFilter);
+    const scopedOut = buildScopedOutRows(filteredProviders, activeRegionFilter, typeFilter);
     return sortRows([...aggregated, ...scopedOut], sortKey, sortDir);
   }, [
     rows,
     providerById,
     filteredProviders,
     accessFilter,
-    regionFilter,
+    activeRegionFilter,
     typeFilter,
     sortKey,
     sortDir,
@@ -709,13 +706,13 @@ export function LeaderboardClient() {
     [rankMap, checkboxColumn],
   );
 
-  const regionOptions: readonly string[] = ["all", ...regions];
+  const regionOptions: readonly string[] = regions;
   const typeOptions: readonly string[] = ["all", "grpc", "graphql", "archival"];
   const accessOptions: readonly string[] = ACCESS_OPTIONS;
   const accessLabel = (value: string) =>
     value === "all" ? "All" : value === "free" ? "Free" : "Paid";
   const regionFilterLabel = (value: string) =>
-    value === "all" ? "All" : regionLabel(value);
+    regionLabel(value);
   const typeFilterLabel = (value: string) =>
     value === "all"
       ? "All"
@@ -765,7 +762,7 @@ export function LeaderboardClient() {
           onSelect={(v) => {
             const next = v as AccessFilter;
             setAccessFilter(next);
-            pushUrl(regionFilter, typeFilter, next, sortKey, sortDir);
+            pushUrl(activeRegionFilter, typeFilter, next, sortKey, sortDir);
           }}
         />
 
@@ -773,7 +770,7 @@ export function LeaderboardClient() {
         <FilterSelect
           label="Region"
           options={regionOptions}
-          selected={regionFilter}
+          selected={activeRegionFilter}
           formatOption={regionFilterLabel}
           onSelect={(v) => {
             setRegionFilter(v);
@@ -791,7 +788,7 @@ export function LeaderboardClient() {
               formatOption={typeFilterLabel}
               onSelect={(v) => {
                 setTypeFilter(v);
-                pushUrl(regionFilter, v, accessFilter, sortKey, sortDir);
+                pushUrl(activeRegionFilter, v, accessFilter, sortKey, sortDir);
               }}
             />
           </>
@@ -844,12 +841,12 @@ export function LeaderboardClient() {
                 provider?.public ?? r.is_public,
                 accessFilter,
               );
-              const matchesRegion = regionFilter === "all" || r.region === regionFilter;
+              const matchesRegion = r.region === activeRegionFilter;
               return matchesAccess && matchesRegion;
             })
           }
           providers={filteredProviders}
-          region={regionFilter}
+          region={activeRegionFilter}
         />
       )}
 
@@ -891,15 +888,15 @@ export function LeaderboardClient() {
           </div>
           <div className="flex gap-2">
             <dt className="w-36 shrink-0 font-medium text-text-secondary">Freshness ckpts</dt>
-            <dd>How many checkpoints behind the chain head this provider is (<code className="font-mono">chain_head − provider_latest</code>). Averaged across regions over the last hour. 0 means perfectly in sync. Lower is better.</dd>
+            <dd>How many checkpoints behind the chain head this provider is (<code className="font-mono">chain_head − provider_latest</code>). 0 means perfectly in sync. Lower is better.</dd>
           </div>
           <div className="flex gap-2">
             <dt className="w-36 shrink-0 font-medium text-text-secondary">Uptime</dt>
-            <dd>Fraction of probe cycles that received a valid response, over a 1-hour rolling window. When multiple regions are aggregated, the worst-case region is shown.</dd>
+            <dd>Fraction of probe cycles that received a valid response over a 1-hour rolling window.</dd>
           </div>
           <div className="flex gap-2">
             <dt className="w-36 shrink-0 font-medium text-text-secondary">Error Rate</dt>
-            <dd>Fraction of probe cycles that returned an error or timed out, over a 5-minute rolling window. When multiple regions are aggregated, the worst-case region is shown. Lower is better.</dd>
+            <dd>Fraction of probe cycles that returned an error or timed out over a 5-minute rolling window. Lower is better.</dd>
           </div>
         </dl>
       </div>

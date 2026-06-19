@@ -111,25 +111,23 @@ function buildMatrix(
     grouped.get(r.provider_id)![r.endpoint_type].push(r);
   }
 
-  if (region !== "all") {
-    for (const provider of providers) {
-      if (provider.regions == null || provider.regions.includes(region)) {
-        continue;
-      }
-      if (!grouped.has(provider.id)) {
-        grouped.set(provider.id, {
-          name: provider.name,
-          grpc: [],
-          graphql: [],
-          archival: [],
-        });
-      }
+  for (const provider of providers) {
+    if (provider.regions == null || provider.regions.includes(region)) {
+      continue;
+    }
+    if (!grouped.has(provider.id)) {
+      grouped.set(provider.id, {
+        name: provider.name,
+        grpc: [],
+        graphql: [],
+        archival: [],
+      });
     }
   }
 
   return Array.from(grouped.entries()).map(([id, g]) => {
     const provider = providers.find((p) => p.id === id);
-    const scopedOut = region !== "all" && provider?.regions != null && !provider.regions.includes(region);
+    const scopedOut = provider?.regions != null && !provider.regions.includes(region);
     const endpointTypes = provider != null ? providerEndpointTypes(provider) : [];
 
     function summarize(type: EndpointType, slice: ProviderMetrics[]): EndpointSlice | null {

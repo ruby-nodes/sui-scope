@@ -76,8 +76,6 @@ providers:
     name: "ZAN"
     public: false
     graphql: "https://api.zan.top/public/sui-mainnet/graphql"
-    regions:
-      - sin
 
   - id: blockpi
     name: "BlockPI"
