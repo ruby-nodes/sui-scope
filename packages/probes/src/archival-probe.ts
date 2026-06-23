@@ -137,6 +137,7 @@ async function callGetCheckpoint(
   sequenceNumber: number,
   probeVersion: string,
   credentials: grpc.ChannelCredentials,
+  headers?: Record<string, string>,
   token?: ProviderToken,
 ): Promise<{ latencyMs: number }> {
   const { host, port } = parseEndpoint(endpoint);
@@ -160,6 +161,9 @@ async function callGetCheckpoint(
     await new Promise<GetCheckpointResponse>((resolve, reject) => {
       const deadline = new Date(Date.now() + PROBE_TIMEOUT_MS);
       const metadata = new grpc.Metadata();
+      for (const [header, value] of Object.entries(headers ?? {})) {
+        metadata.set(header, value);
+      }
       if (token != null) {
         metadata.set(token.header, token.value);
       }
@@ -221,6 +225,7 @@ export async function probeArchival(
       targetCheckpoint,
       probeVersion,
       credentials,
+      provider.headers,
       provider.token,
     );
 

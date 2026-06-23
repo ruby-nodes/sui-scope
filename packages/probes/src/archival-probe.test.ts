@@ -94,6 +94,32 @@ describe("probeArchival — success", () => {
     );
     expect(events.every((e) => e.metric !== "freshness_checkpoints")).toBe(true);
   });
+
+  it("attaches archival-specific static headers as gRPC metadata", async () => {
+    let receivedDataTypeHeader: unknown[] = [];
+    const { server: headerServer, port: headerPort } = await createTestServer(
+      (call, cb) => {
+        receivedDataTypeHeader = call.metadata.get("x-data-type");
+        cb(null, { checkpoint: { sequence_number: "3000000" } });
+      },
+    );
+
+    const events = await probeArchival(
+      {
+        id: "header-archival",
+        endpoint: `127.0.0.1:${headerPort}`,
+        headers: { "x-data-type": "archive" },
+      },
+      "us-east-1",
+      "0.1.0",
+      5_592_000,
+      grpc.credentials.createInsecure(),
+    );
+    headerServer.forceShutdown();
+
+    expect(events[0]?.success).toBe(true);
+    expect(receivedDataTypeHeader).toEqual(["archive"]);
+  });
 });
 
 // ─── Failure path ─────────────────────────────────────────────────────────────

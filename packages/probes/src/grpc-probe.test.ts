@@ -22,13 +22,19 @@ type ServerErrorArg = {
 };
 
 function createTestServer(
-  handler: (callback: SendUnaryData) => void,
+  handler: (
+    callback: SendUnaryData,
+    call: grpc.ServerUnaryCall<unknown, ServiceInfoResponse>,
+  ) => void,
 ): Promise<{ server: grpc.Server; port: number }> {
   return new Promise((resolve, reject) => {
     const srv = new grpc.Server();
     srv.addService(LedgerService.service, {
-      getServiceInfo: (_call: unknown, callback: SendUnaryData) => {
-        handler(callback);
+      getServiceInfo: (
+        call: grpc.ServerUnaryCall<unknown, ServiceInfoResponse>,
+        callback: SendUnaryData,
+      ) => {
+        handler(callback, call);
       },
     });
 
@@ -116,6 +122,32 @@ describe("probeGrpc — success", () => {
     );
     const ev = events.find((e) => e.metric === "freshness_checkpoints");
     expect(ev?.value).toBe(0);
+  });
+
+  it("attaches static headers as gRPC metadata", async () => {
+    let receivedNetworkHeader: unknown[] = [];
+    const { server: headerServer, port: headerPort } = await createTestServer(
+      (cb, call) => {
+        receivedNetworkHeader = call.metadata.get("x-network");
+        cb(null, { checkpoint_height: "500050", chain: "mainnet" });
+      },
+    );
+
+    const events = await probeGrpc(
+      {
+        id: "header-provider",
+        endpoint: `127.0.0.1:${headerPort}`,
+        headers: { "x-network": "sui-mainnet" },
+      },
+      "us-east-1",
+      "0.1.0",
+      500100,
+      grpc.credentials.createInsecure(),
+    );
+    headerServer.forceShutdown();
+
+    expect(events[0]?.success).toBe(true);
+    expect(receivedNetworkHeader).toEqual(["sui-mainnet"]);
   });
 });
 

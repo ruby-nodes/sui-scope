@@ -423,6 +423,94 @@ providers:
     expect(result.grpc[0]?.token).toBeUndefined();
   });
 
+  it("applies provider-wide headers to every configured endpoint type", () => {
+    const filePath = writeYaml(
+      "shared-headers.yaml",
+      `
+providers:
+  - id: shared
+    name: "Shared Headers"
+    grpc: "shared.example.com:443"
+    graphql: "https://shared.example.com/graphql"
+    archival: "archive.shared.example.com:443"
+    headers:
+      x-network: sui-mainnet
+`,
+    );
+
+    const result = loadProviders(filePath);
+
+    expect(result.grpc[0]?.headers).toEqual({ "x-network": "sui-mainnet" });
+    expect(result.graphql[0]?.headers).toEqual({ "x-network": "sui-mainnet" });
+    expect(result.archival[0]?.headers).toEqual({ "x-network": "sui-mainnet" });
+  });
+
+  it("merges endpoint-specific headers with provider-wide headers", () => {
+    const filePath = writeYaml(
+      "endpoint-headers.yaml",
+      `
+providers:
+  - id: split
+    name: "Split Headers"
+    grpc_env: PROVIDER_GRPC_URL
+    archival_env: PROVIDER_GRPC_URL
+    headers:
+      x-network: sui-mainnet
+    archival_headers:
+      x-data-type: archive
+`,
+    );
+
+    const result = loadProviders(filePath, {
+      PROVIDER_GRPC_URL: "split.example.com:443",
+    });
+
+    expect(result.grpc[0]?.headers).toEqual({ "x-network": "sui-mainnet" });
+    expect(result.archival[0]?.headers).toEqual({
+      "x-network": "sui-mainnet",
+      "x-data-type": "archive",
+    });
+    expect(result.grpc[0]?.endpoint).toBe(result.archival[0]?.endpoint);
+  });
+
+  it("throws when provider-wide and endpoint-specific headers collide", () => {
+    const filePath = writeYaml(
+      "duplicate-headers.yaml",
+      `
+providers:
+  - id: duplicate
+    name: "Duplicate Headers"
+    grpc: "duplicate.example.com:443"
+    headers:
+      x-network: sui-mainnet
+    grpc_headers:
+      X-Network: sui-testnet
+`,
+    );
+
+    expect(() => loadProviders(filePath)).toThrow(/duplicate grpc header/i);
+  });
+
+  it("throws when static headers collide with token headers", () => {
+    const filePath = writeYaml(
+      "token-header-duplicate.yaml",
+      `
+providers:
+  - id: token-duplicate
+    name: "Token Duplicate"
+    grpc: "token.example.com:443"
+    headers:
+      x-token: static
+    grpc_token_header: x-token
+    grpc_token_env: TOKEN_ENV
+`,
+    );
+
+    expect(() => loadProviders(filePath, { TOKEN_ENV: "secret" })).toThrow(
+      /duplicate grpc header/i,
+    );
+  });
+
   it("throws when providers list is empty", () => {
     const filePath = writeYaml(
       "empty.yaml",

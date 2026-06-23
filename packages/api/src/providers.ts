@@ -20,6 +20,14 @@ const ProviderSchema = z.object({
   graphql_env: z.string().optional(),
   /** Name of the env var holding a private archival endpoint (never exposed via the API). */
   archival_env: z.string().optional(),
+  /** Static headers / metadata attached to every endpoint type. Not exposed via the API. */
+  headers: z.record(z.string().min(1), z.string().min(1)).optional(),
+  /** Static headers / metadata attached only to gRPC requests. Not exposed via the API. */
+  grpc_headers: z.record(z.string().min(1), z.string().min(1)).optional(),
+  /** Static HTTP headers attached only to GraphQL requests. Not exposed via the API. */
+  graphql_headers: z.record(z.string().min(1), z.string().min(1)).optional(),
+  /** Static headers / metadata attached only to archival requests. Not exposed via the API. */
+  archival_headers: z.record(z.string().min(1), z.string().min(1)).optional(),
   /** gRPC token header name (safe to store; value lives in an env var). */
   grpc_token_header: z.string().optional(),
   /** Name of the env var holding the gRPC token value (never exposed via the API). */

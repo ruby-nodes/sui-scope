@@ -171,6 +171,46 @@ describe("startStreamProbe — stream_checkpoint_gap", () => {
     expect(event.error_type).toBe("no_data");
     expect(event.value).toBe(0);
   });
+
+  it("attaches static headers as gRPC stream metadata", async () => {
+    let receivedNetworkHeader: unknown[] = [];
+    const { server: headerServer, port: headerPort } =
+      await createTestStreamServer((call) => {
+        receivedNetworkHeader = call.metadata.get("x-network");
+        call.write({ cursor: "100" });
+      });
+
+    const { waitFor, emit } = collectEvents();
+
+    const stop = startStreamProbe(
+      {
+        id: "stream-header",
+        endpoint: `127.0.0.1:${headerPort}`,
+        headers: { "x-network": "sui-mainnet" },
+      },
+      "us-east-1",
+      "0.1.0",
+      {
+        emit,
+        credentials: grpc.credentials.createInsecure(),
+        fetchChainHead: () => Promise.resolve(110),
+        sampleIntervalMs: 50,
+        windowMs: 60_000,
+        graceWindowMs: 5_000,
+        reconnectDelayMs: 100,
+      },
+    );
+
+    const event = await waitFor(
+      "stream_checkpoint_gap",
+      (e) => e.success === true,
+    );
+    stop();
+    headerServer.forceShutdown();
+
+    expect(event.value).toBe(10);
+    expect(receivedNetworkHeader).toEqual(["sui-mainnet"]);
+  });
 });
 
 // ─── Tests: window metrics (stream_uptime_pct, stream_disconnects_per_hour) ──

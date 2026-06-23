@@ -18,6 +18,8 @@ import type { GrpcProviderConfig, GraphQLProviderConfig, ArchivalProviderConfig 
 
 // ─── Providers YAML schema ────────────────────────────────────────────────────
 
+const HeadersSchema = z.record(z.string().min(1), z.string().min(1));
+
 const ProviderEntrySchema = z
   .object({
     id: z.string().min(1),
@@ -32,6 +34,14 @@ const ProviderEntrySchema = z
     archival: z.string().min(1).optional(),
     /** Name of an env var holding the GraphQL full URL for this provider (private endpoint). */
     graphql_env: z.string().min(1).optional(),
+    /** Static headers / metadata attached to every endpoint type for this provider. */
+    headers: HeadersSchema.optional(),
+    /** Static headers / metadata attached only to gRPC requests for this provider. */
+    grpc_headers: HeadersSchema.optional(),
+    /** Static HTTP headers attached only to GraphQL requests for this provider. */
+    graphql_headers: HeadersSchema.optional(),
+    /** Static headers / metadata attached only to archival requests for this provider. */
+    archival_headers: HeadersSchema.optional(),
     /**
      * Header/metadata key name for the gRPC auth token (e.g. "x-token", "authorization").
      * Must be paired with grpc_token_env.
@@ -161,6 +171,41 @@ export function loadProviders(
       return { header: header!, value: val };
     }
 
+    function mergeHeaders(
+      endpointHeaders: Record<string, string> | undefined,
+      token: { header: string; value: string } | undefined,
+      label: string,
+    ): Record<string, string> | undefined {
+      const merged: Record<string, string> = {};
+      const seen = new Map<string, string>();
+
+      function add(header: string, value: string, source: string, include = true): void {
+        const key = header.toLowerCase();
+        const previous = seen.get(key);
+        if (previous != null) {
+          throw new Error(
+            `Provider "${entry.id}": duplicate ${label} header "${header}" in ${source}; already set by ${previous}`,
+          );
+        }
+        seen.set(key, source);
+        if (include) {
+          merged[header] = value;
+        }
+      }
+
+      for (const [header, value] of Object.entries(entry.headers ?? {})) {
+        add(header, value, "headers");
+      }
+      for (const [header, value] of Object.entries(endpointHeaders ?? {})) {
+        add(header, value, `${label}_headers`);
+      }
+      if (token != null) {
+        add(token.header, token.value, `${label}_token_header`, false);
+      }
+
+      return Object.keys(merged).length > 0 ? merged : undefined;
+    }
+
     // ── gRPC endpoint ────────────────────────────────────────────────────────
     let grpcEndpoint = entry.grpc;
     if (entry.grpc_env != null) {
@@ -174,7 +219,14 @@ export function loadProviders(
     }
     if (grpcEndpoint != null) {
       const token = resolveToken(entry.grpc_token_header, entry.grpc_token_env, "grpc_token_env");
-      grpc.push({ id: entry.id, endpoint: grpcEndpoint, isPublic, ...(token ? { token } : {}) });
+      const headers = mergeHeaders(entry.grpc_headers, token, "grpc");
+      grpc.push({
+        id: entry.id,
+        endpoint: grpcEndpoint,
+        isPublic,
+        ...(headers ? { headers } : {}),
+        ...(token ? { token } : {}),
+      });
     }
 
     // ── GraphQL endpoint ─────────────────────────────────────────────────────
@@ -190,7 +242,14 @@ export function loadProviders(
     }
     if (graphqlEndpoint != null) {
       const token = resolveToken(entry.graphql_token_header, entry.graphql_token_env, "graphql_token_env");
-      graphql.push({ id: entry.id, endpoint: graphqlEndpoint, isPublic, ...(token ? { token } : {}) });
+      const headers = mergeHeaders(entry.graphql_headers, token, "graphql");
+      graphql.push({
+        id: entry.id,
+        endpoint: graphqlEndpoint,
+        isPublic,
+        ...(headers ? { headers } : {}),
+        ...(token ? { token } : {}),
+      });
     }
 
     // ── Archival gRPC endpoint ───────────────────────────────────────────────
@@ -206,7 +265,14 @@ export function loadProviders(
     }
     if (archivalEndpoint != null) {
       const token = resolveToken(entry.archival_token_header, entry.archival_token_env, "archival_token_env");
-      archival.push({ id: entry.id, endpoint: archivalEndpoint, isPublic, ...(token ? { token } : {}) });
+      const headers = mergeHeaders(entry.archival_headers, token, "archival");
+      archival.push({
+        id: entry.id,
+        endpoint: archivalEndpoint,
+        isPublic,
+        ...(headers ? { headers } : {}),
+        ...(token ? { token } : {}),
+      });
     }
   }
 

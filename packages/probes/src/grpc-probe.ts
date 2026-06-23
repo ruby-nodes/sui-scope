@@ -132,6 +132,7 @@ async function callGetServiceInfo(
   endpoint: string,
   probeVersion: string,
   credentials: grpc.ChannelCredentials,
+  headers?: Record<string, string>,
   token?: ProviderToken,
 ): Promise<{ latencyMs: number; checkpointHeight: number }> {
   const { host, port } = parseEndpoint(endpoint);
@@ -161,6 +162,9 @@ async function callGetServiceInfo(
       (resolve, reject) => {
         const deadline = new Date(Date.now() + PROBE_TIMEOUT_MS);
         const metadata = new grpc.Metadata();
+        for (const [header, value] of Object.entries(headers ?? {})) {
+          metadata.set(header, value);
+        }
         if (token != null) {
           metadata.set(token.header, token.value);
         }
@@ -209,6 +213,7 @@ export async function fetchChainHead(
     REFERENCE_ENDPOINT,
     "0.0.0",
     credentials,
+    undefined,
   );
   return checkpointHeight;
 }
@@ -240,6 +245,7 @@ export async function probeGrpc(
       provider.endpoint,
       probeVersion,
       credentials,
+      provider.headers,
       provider.token,
     );
 

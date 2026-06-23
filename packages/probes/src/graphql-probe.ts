@@ -84,6 +84,7 @@ function parseEndpointUrl(endpoint: string): {
 async function callCheckpointQuery(
   endpoint: string,
   probeVersion: string,
+  staticHeaders?: Record<string, string>,
   token?: ProviderToken,
 ): Promise<{ latencyMs: number; sequenceNumber: number }> {
   const { protocol, hostname, port, path } = parseEndpointUrl(endpoint);
@@ -100,6 +101,9 @@ async function callCheckpointQuery(
     "User-Agent": `SuiScope-Probe/${probeVersion}`,
     Host: hostname, // virtual-host header (required when connecting via IP)
   };
+  for (const [header, value] of Object.entries(staticHeaders ?? {})) {
+    headers[header] = value;
+  }
   if (token != null) {
     headers[token.header] = token.value;
   }
@@ -234,6 +238,7 @@ export async function probeGraphQL(
     const { latencyMs, sequenceNumber } = await callCheckpointQuery(
       provider.endpoint,
       probeVersion,
+      provider.headers,
       provider.token,
     );
 

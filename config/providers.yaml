@@ -37,6 +37,20 @@
 #   archival_token_env:     Optional. Name of the env var holding the archival token value.
 #                           Must be paired with archival_token_header.
 #
+#   Static request header fields (non-secret values only; never put secrets here):
+#   headers:           Optional. Header/metadata map applied to every configured endpoint type.
+#                      Example:
+#                        headers:
+#                          x-network: sui-mainnet
+#   grpc_headers:      Optional. Header/metadata map applied only to gRPC requests.
+#   graphql_headers:   Optional. HTTP header map applied only to GraphQL requests.
+#   archival_headers:  Optional. Header/metadata map applied only to archival requests.
+#                      Useful when archival uses the same endpoint as gRPC but requires
+#                      request metadata such as:
+#                        archival_env: PROVIDER_GRPC_URL
+#                        archival_headers:
+#                          x-data-type: archive
+#
 # Each provider must have at least one of: grpc, graphql, grpc_env, graphql_env, archival, archival_env.
 # Mixing public and private fields on the same provider is allowed (e.g. public grpc + private graphql_env).
 #
@@ -75,7 +89,17 @@ providers:
   - id: zan
     name: "ZAN"
     public: false
+    grpc_env: "ZAN_GRPC_URL"
+    grpc_token_env: "ZAN_GRPC_TOKEN"
+    grpc_token_header: "x-token"
     graphql: "https://api.zan.top/public/sui-mainnet/graphql"
+    headers:
+      x-network: "sui-mainnet"
+    archival_env: "ZAN_GRPC_URL"
+    archival_token_header: "x-token"
+    archival_token_env: "ZAN_GRPC_TOKEN"
+    archival_headers:
+      x-data-type: "archive"
 
   - id: blockpi
     name: "BlockPI"
@@ -84,7 +108,7 @@ providers:
     graphql_env: "BLOCKPI_GRAPHQL_URL"
     grpc_token_header: "x-token"
     grpc_token_env: "BLOCKPI_GRPC_TOKEN"
-    archival: "sui-archive.blockpi.network:443"
+    archival_env: "BLOCKPI_ARCHIVAL_URL"
     archival_token_header: "x-token"
     archival_token_env: "BLOCKPI_ARCHIVAL_TOKEN"
 
@@ -98,6 +122,6 @@ providers:
     graphql_env: "QUICKNODE_GRAPHQL_URL"
     grpc_token_header: "x-token"
     grpc_token_env: "QUICKNODE_GRPC_TOKEN"
-    archival: "QUICKNODE_ARCHIVAL_URL"
+    archival_env: "QUICKNODE_ARCHIVAL_URL"
     archival_token_header: "x-token"
     archival_token_env: "QUICKNODE_ARCHIVAL_TOKEN"

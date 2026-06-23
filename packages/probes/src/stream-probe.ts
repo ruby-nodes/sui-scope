@@ -222,6 +222,9 @@ export function startStreamProbe(
       channelOptions,
     );
     const metadata = new grpc.Metadata();
+    for (const [header, value] of Object.entries(provider.headers ?? {})) {
+      metadata.set(header, value);
+    }
     if (provider.token != null) {
       metadata.set(provider.token.header, provider.token.value);
     }

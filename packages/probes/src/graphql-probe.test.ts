@@ -99,6 +99,35 @@ describe("probeGraphQL — success", () => {
     const ev = events.find((e) => e.metric === "freshness_checkpoints");
     expect(ev?.value).toBe(0);
   });
+
+  it("attaches static headers to the HTTP request", async () => {
+    let receivedNetworkHeader: string | string[] | undefined;
+    const { server: headerServer, port: headerPort } = await createTestServer(
+      (req, res) => {
+        receivedNetworkHeader = req.headers["x-network"];
+        const body = JSON.stringify({
+          data: { checkpoint: { sequenceNumber: 500050 } },
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(body);
+      },
+    );
+
+    const events = await probeGraphQL(
+      {
+        id: "header-provider",
+        endpoint: `http://127.0.0.1:${headerPort}/graphql`,
+        headers: { "x-network": "sui-mainnet" },
+      },
+      "us-east-1",
+      "0.1.0",
+      500100,
+    );
+    headerServer.close();
+
+    expect(events[0]?.success).toBe(true);
+    expect(receivedNetworkHeader).toBe("sui-mainnet");
+  });
 });
 
 // ─── GraphQL errors array ──────────────────────────────────────────────────────
