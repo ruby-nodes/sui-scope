@@ -9,7 +9,7 @@ export default function LeaderboardPage() {
       <div className="mb-6">
         <SectionHeading as="h1">Provider Leaderboard</SectionHeading>
         <p className="mt-2 text-text-secondary">
-          Cold-connection latency, freshness, uptime, and error rate across Sui
+          This is public and common-good board to measure cold-connection latency, freshness, uptime, and error rate across Sui
           infrastructure providers. Sort by any column; filter by region or
           endpoint type.
         </p>
