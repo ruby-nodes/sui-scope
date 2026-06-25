@@ -74,6 +74,12 @@ const ProviderEntrySchema = z
      * Omitted means all deployed probe regions.
      */
     regions: z.array(z.string().min(1)).min(1).optional(),
+    /**
+     * Whether to run the long-lived gRPC stream subscription probe for this provider.
+     * Defaults to true for backwards compatibility. Set false for endpoints where
+     * continuous checkpoint streams are too costly.
+     */
+    stream: z.boolean().default(true),
   })
   .refine(
     (data) =>
@@ -224,6 +230,7 @@ export function loadProviders(
         id: entry.id,
         endpoint: grpcEndpoint,
         isPublic,
+        streamEnabled: entry.stream,
         ...(headers ? { headers } : {}),
         ...(token ? { token } : {}),
       });
@@ -297,6 +304,23 @@ const EnvSchema = z.object({
       if (!Number.isFinite(n) || n <= 0) {
         throw new Error(
           `PROBE_INTERVAL_MS must be a positive integer, got "${val}"`,
+        );
+      }
+      return n;
+    }),
+  /**
+   * Archival probe interval in milliseconds.
+   * Optional — defaults to 300 000 (5 minutes).
+   */
+  ARCHIVAL_PROBE_INTERVAL_MS: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (val === undefined) return 300_000;
+      const n = Number.parseInt(val, 10);
+      if (!Number.isFinite(n) || n <= 0) {
+        throw new Error(
+          `ARCHIVAL_PROBE_INTERVAL_MS must be a positive integer, got "${val}"`,
         );
       }
       return n;

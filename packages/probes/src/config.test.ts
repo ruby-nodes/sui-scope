@@ -45,7 +45,12 @@ providers:
     const result = loadProviders(filePath);
 
     expect(result.grpc).toEqual([
-      { id: "foo", endpoint: "foo.example.com:443", isPublic: true },
+      {
+        id: "foo",
+        endpoint: "foo.example.com:443",
+        isPublic: true,
+        streamEnabled: true,
+      },
     ]);
     expect(result.graphql).toEqual([
       { id: "foo", endpoint: "https://foo.example.com/graphql", isPublic: true },
@@ -138,7 +143,12 @@ providers:
     const result = loadProviders(filePath, { MY_GRPC_ENDPOINT: "private.example.com:443" });
 
     expect(result.grpc).toEqual([
-      { id: "private-grpc", endpoint: "private.example.com:443", isPublic: false },
+      {
+        id: "private-grpc",
+        endpoint: "private.example.com:443",
+        isPublic: false,
+        streamEnabled: true,
+      },
     ]);
     expect(result.graphql).toHaveLength(0);
   });
@@ -209,7 +219,12 @@ providers:
     const result = loadProviders(filePath, { PRIVATE_GQL_URL: "https://private.example.com/graphql" });
 
     expect(result.grpc).toEqual([
-      { id: "mixed", endpoint: "public.example.com:443", isPublic: false },
+      {
+        id: "mixed",
+        endpoint: "public.example.com:443",
+        isPublic: false,
+        streamEnabled: true,
+      },
     ]);
     expect(result.graphql).toEqual([
       { id: "mixed", endpoint: "https://private.example.com/graphql", isPublic: false },
@@ -230,6 +245,39 @@ providers:
     const result = loadProviders(filePath);
 
     expect(result.grpc[0]?.isPublic).toBe(true);
+  });
+
+  it("defaults streamEnabled to true for gRPC providers", () => {
+    const filePath = writeYaml(
+      "default-stream.yaml",
+      `
+providers:
+  - id: pub
+    name: "Public Provider"
+    grpc: "pub.example.com:443"
+`,
+    );
+
+    const result = loadProviders(filePath);
+
+    expect(result.grpc[0]?.streamEnabled).toBe(true);
+  });
+
+  it("allows disabling the stream probe for a gRPC provider", () => {
+    const filePath = writeYaml(
+      "stream-disabled.yaml",
+      `
+providers:
+  - id: paid
+    name: "Paid Provider"
+    grpc: "paid.example.com:443"
+    stream: false
+`,
+    );
+
+    const result = loadProviders(filePath);
+
+    expect(result.grpc[0]?.streamEnabled).toBe(false);
   });
 
   it("keeps region-restricted providers in included regions", () => {
@@ -544,12 +592,22 @@ describe("loadEnv", () => {
 
     expect(result.REGION).toBe("us-east-1");
     expect(result.PROBE_INTERVAL_MS).toBe(60_000);
+    expect(result.ARCHIVAL_PROBE_INTERVAL_MS).toBe(300_000);
   });
 
   it("parses explicit PROBE_INTERVAL_MS", () => {
     const result = loadEnv({ ...VALID_ENV, REGION: "eu-west-1", PROBE_INTERVAL_MS: "30000" });
 
     expect(result.PROBE_INTERVAL_MS).toBe(30_000);
+  });
+
+  it("parses explicit ARCHIVAL_PROBE_INTERVAL_MS", () => {
+    const result = loadEnv({
+      ...VALID_ENV,
+      ARCHIVAL_PROBE_INTERVAL_MS: "900000",
+    });
+
+    expect(result.ARCHIVAL_PROBE_INTERVAL_MS).toBe(900_000);
   });
 
   it("throws when REGION is missing", () => {
@@ -564,6 +622,12 @@ describe("loadEnv", () => {
     expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "0" })).toThrow();
     expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "-5" })).toThrow();
     expect(() => loadEnv({ ...VALID_ENV, PROBE_INTERVAL_MS: "abc" })).toThrow();
+  });
+
+  it("throws when ARCHIVAL_PROBE_INTERVAL_MS is not a positive integer", () => {
+    expect(() => loadEnv({ ...VALID_ENV, ARCHIVAL_PROBE_INTERVAL_MS: "0" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, ARCHIVAL_PROBE_INTERVAL_MS: "-5" })).toThrow();
+    expect(() => loadEnv({ ...VALID_ENV, ARCHIVAL_PROBE_INTERVAL_MS: "abc" })).toThrow();
   });
 
   it("passes through optional PROVIDERS_YAML_PATH", () => {

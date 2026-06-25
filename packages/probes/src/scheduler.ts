@@ -5,7 +5,8 @@
  *   1. Fetch the canonical chain head (once per cycle, shared across all providers).
  *   2. Probe every gRPC provider concurrently.
  *   3. Probe every GraphQL provider concurrently.
- *   4. Emit each resulting MeasurementEvent to stdout as a JSON line.
+ *   4. Probe archival providers only on archival ticks.
+ *   5. Emit each resulting MeasurementEvent to stdout as a JSON line.
  *
  * Each cycle is fully stateless — no mutable state is shared between cycles.
  *
@@ -27,6 +28,7 @@ export type SchedulerConfig = {
   region: string;
   probeVersion: string;
   intervalMs: number;
+  archivalIntervalMs: number;
 };
 
 /** Injectable dependencies — defaults to real probe functions and stdout. */
@@ -36,6 +38,10 @@ export type SchedulerDeps = {
   probeGraphQL?: typeof probeGraphQL;
   probeArchival?: typeof probeArchival;
   emit?: (event: MeasurementEvent) => void;
+};
+
+export type CycleOptions = {
+  includeArchival?: boolean;
 };
 
 // ─── Default emit ─────────────────────────────────────────────────────────────
@@ -58,6 +64,7 @@ function defaultEmit(event: MeasurementEvent): void {
 export async function runOneCycle(
   config: SchedulerConfig,
   deps: SchedulerDeps = {},
+  options: CycleOptions = {},
 ): Promise<void> {
   const {
     fetchChainHead: doFetchChainHead = fetchChainHead,
@@ -66,6 +73,7 @@ export async function runOneCycle(
     probeArchival: doProbeArchival = probeArchival,
     emit = defaultEmit,
   } = deps;
+  const includeArchival = options.includeArchival ?? true;
 
   const chainHead = await doFetchChainHead();
 
@@ -81,9 +89,11 @@ export async function runOneCycle(
       ),
     ),
     Promise.allSettled(
-      config.archivalProviders.map((p) =>
-        doProbeArchival(p, config.region, config.probeVersion, chainHead),
-      ),
+      includeArchival
+        ? config.archivalProviders.map((p) =>
+            doProbeArchival(p, config.region, config.probeVersion, chainHead),
+          )
+        : [],
     ),
   ]);
 
@@ -115,14 +125,27 @@ export function startScheduler(
   config: SchedulerConfig,
   deps: SchedulerDeps = {},
 ): NodeJS.Timeout {
+  let lastArchivalAt = Number.NEGATIVE_INFINITY;
+
+  const runCycle = (label: string): void => {
+    const now = Date.now();
+    const includeArchival =
+      config.archivalProviders.length > 0 &&
+      now - lastArchivalAt >= config.archivalIntervalMs;
+
+    if (includeArchival) {
+      lastArchivalAt = now;
+    }
+
+    void runOneCycle(config, deps, { includeArchival }).catch((err: unknown) => {
+      console.error(`[scheduler] unhandled error in ${label}:`, err);
+    });
+  };
+
   // Run first cycle immediately (do not wait for first interval tick).
-  void runOneCycle(config, deps).catch((err: unknown) => {
-    console.error("[scheduler] unhandled error in first cycle:", err);
-  });
+  runCycle("first cycle");
 
   return setInterval(() => {
-    void runOneCycle(config, deps).catch((err: unknown) => {
-      console.error("[scheduler] unhandled error in cycle:", err);
-    });
+    runCycle("cycle");
   }, config.intervalMs);
 }

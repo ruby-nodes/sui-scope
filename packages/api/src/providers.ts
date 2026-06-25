@@ -47,6 +47,8 @@ const ProviderSchema = z.object({
   public: z.boolean().default(true),
   /** Optional provider-wide list of probe regions. Omitted means all regions. */
   regions: z.array(z.string().min(1)).min(1).optional(),
+  /** Internal probe control: whether probes run long-lived gRPC stream checks. Not exposed via the API. */
+  stream: z.boolean().optional(),
 }).refine(
   (data) => data.regions == null || new Set(data.regions).size === data.regions.length,
   {

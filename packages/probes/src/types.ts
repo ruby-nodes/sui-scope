@@ -36,6 +36,8 @@ export type GrpcProviderConfig = {
   endpoint: string; // "host:port", e.g. "fullnode.mainnet.sui.io:443"
   /** Whether this provider's endpoint URL is publicly accessible without auth. Default: true. */
   isPublic?: boolean;
+  /** Whether to run the long-lived SubscribeCheckpoints stream probe. Default: true. */
+  streamEnabled?: boolean;
   /** Static gRPC metadata to attach on every request. */
   headers?: ProviderHeaders;
   /** If set, attach this token as gRPC call metadata on every request. */

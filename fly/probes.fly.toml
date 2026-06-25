@@ -9,6 +9,7 @@ primary_region = "iad"
 
 [env]
   PROBE_INTERVAL_MS = "60000"
+  ARCHIVAL_PROBE_INTERVAL_MS = "300000"
   # REGION falls back to the FLY_REGION env var set automatically per machine.
   # Override only if you need a custom label:
   # REGION = "custom-label"

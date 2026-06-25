@@ -11,6 +11,10 @@
 #                  regions:
 #                    - iad
 #                    - fra
+#   stream:      Optional boolean. Default: true. Set to false to skip the
+#                long-lived gRPC SubscribeCheckpoints stream probe while keeping
+#                unary gRPC latency/freshness probes enabled. Useful for paid
+#                endpoints that bill continuously streamed checkpoint data.
 #
 #   Public endpoint fields (URL stored directly in this file — never put secrets here):
 #   grpc:        Optional. Public gRPC endpoint as "host:port".
@@ -89,6 +93,7 @@ providers:
   - id: zan
     name: "ZAN"
     public: false
+    stream: false
     grpc_env: "ZAN_GRPC_URL"
     grpc_token_env: "ZAN_GRPC_TOKEN"
     grpc_token_header: "x-token"
@@ -104,6 +109,7 @@ providers:
   - id: blockpi
     name: "BlockPI"
     public: false
+    stream: false
     grpc_env: "BLOCKPI_GRPC_URL"
     graphql_env: "BLOCKPI_GRAPHQL_URL"
     grpc_token_header: "x-token"
@@ -115,9 +121,10 @@ providers:
   - id: quicknode
     name: "Quicknode"
     public: false
-    regions: 
+    regions:
       - fra
       - iad
+    stream: false
     grpc_env: "QUICKNODE_GRPC_URL"
     graphql_env: "QUICKNODE_GRAPHQL_URL"
     grpc_token_header: "x-token"

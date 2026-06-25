@@ -80,6 +80,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   console.error(
     `[scheduler] starting — region=${env.REGION} interval=${env.PROBE_INTERVAL_MS}ms ` +
+      `archival_interval=${env.ARCHIVAL_PROBE_INTERVAL_MS}ms ` +
       `grpc_providers=${providers.grpc.length} graphql_providers=${providers.graphql.length} ` +
       `archival_providers=${providers.archival.length}`,
   );
@@ -94,13 +95,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       region: env.REGION,
       probeVersion,
       intervalMs: env.PROBE_INTERVAL_MS,
+      archivalIntervalMs: env.ARCHIVAL_PROBE_INTERVAL_MS,
     },
     { emit: networkEmit },
   );
 
-  // Start one stream probe per gRPC provider (Phase 2 — M4-01).
-  // All gRPC providers are assumed to expose SubscriptionService.SubscribeCheckpoints.
+  // Start stream probes only for providers that opt in. Private paid providers
+  // can keep unary gRPC checks without consuming a continuous subscription.
   for (const provider of providers.grpc) {
+    if (provider.streamEnabled === false) {
+      console.error(`[stream] disabled for provider=${provider.id}`);
+      continue;
+    }
     startStreamProbe(provider, env.REGION, probeVersion, { emit: networkEmit });
   }
 }

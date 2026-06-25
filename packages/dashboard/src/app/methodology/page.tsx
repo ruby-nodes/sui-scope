@@ -231,9 +231,14 @@ export default function MethodologyPage() {
                   <tbody>
                     {[
                       {
-                        m: "Latency + freshness",
+                        m: "gRPC/GraphQL latency + freshness",
                         i: "60 s",
                         d: "Direct measurement per cycle",
+                      },
+                      {
+                        m: "Archival latency + success",
+                        i: "5 min",
+                        d: "Direct measurement on archival cycle",
                       },
                       {
                         m: "Error rate",
@@ -542,10 +547,9 @@ export default function MethodologyPage() {
 
             <CalloutBox title="Important">
               <p>
-                SuiScope measures publicly accessible endpoints only. Providers
-                with private or auth-gated infrastructure are not included in
-                the leaderboard unless they expose a freely accessible public
-                endpoint.
+                SuiScope measures both public and private provider endpoints.
+                Private endpoint URLs and secrets are never exposed through the
+                public API or dashboard.
               </p>
             </CalloutBox>
           </Section>
@@ -561,11 +565,12 @@ export default function MethodologyPage() {
             </p>
             <p>
               Probe traffic is deliberately low-volume: one request per
-              provider per endpoint type every 60 seconds. This is well within
-              the fair-use limits of any public node. If you use the same
-              endpoints in your own application, be aware that heavier usage
-              patterns may trigger provider-side rate limiting that is not
-              reflected in SuiScope measurements.
+              provider per gRPC or GraphQL endpoint every 60 seconds. Archival
+              endpoints are probed every 5 minutes. gRPC stream probes, when
+              enabled for a provider, run as separate long-lived subscriptions.
+              If you use the same endpoints in your own application, be aware
+              that heavier usage patterns may trigger provider-side rate
+              limiting that is not reflected in SuiScope measurements.
             </p>
             <CalloutBox title="Rate limiting notice">
               <p>
@@ -586,7 +591,7 @@ export default function MethodologyPage() {
             </p>
             <ul className="space-y-2 list-none">
               {[
-                "Throughput or capacity — SuiScope fires one probe per provider per 60 seconds. It does not load-test endpoints.",
+                "Throughput or capacity — SuiScope fires one gRPC/GraphQL probe per provider per 60 seconds and one archival probe per provider per 5 minutes. It does not load-test endpoints.",
                 "Geographic fairness — probe regions are fixed. A provider optimised for US-East will score better from the iad region than from ap-southeast. Filter by region to compare on a level footing.",
                 "Internal server performance — SuiScope observes external behaviour only. It cannot distinguish between a slow network path and a slow server.",
                 "Transaction submission success — probes use read-only queries. Write-path reliability (transaction throughput, finality latency) is not measured.",

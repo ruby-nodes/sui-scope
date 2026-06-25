@@ -52,7 +52,8 @@ Long-running Node.js daemon deployed per region on Fly.io.
 
 | Metric | Interval |
 |---|---|
-| Latency + freshness | 60 s |
+| gRPC/GraphQL latency + freshness | 60 s |
+| Archival latency + success | 5 min |
 | Error rate (rolling) | derived from above |
 | Uptime (rolling) | derived from above |
 | Stream checkpoint gap | sampled every 30 s |

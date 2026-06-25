@@ -15,11 +15,12 @@ const BASE_CONFIG: SchedulerConfig = {
   region: "us-east-1",
   probeVersion: "0.1.0",
   intervalMs: 60_000,
+  archivalIntervalMs: 300_000,
 };
 
 function makeSuccessEvent(
   providerId: string,
-  type: "grpc" | "graphql",
+  type: "grpc" | "graphql" | "archival",
 ): MeasurementEvent {
   return {
     provider_id: providerId,
@@ -168,6 +169,25 @@ describe("runOneCycle", () => {
     expect(emit).toHaveBeenCalledWith(goodEvent);
     expect(emit).toHaveBeenCalledTimes(1);
   });
+
+  it("skips archival probes when includeArchival is false", async () => {
+    const config: SchedulerConfig = {
+      ...BASE_CONFIG,
+      archivalProviders: [{ id: "archive", endpoint: "archive.example.com:443" }],
+    };
+    const fetchChainHead = vi.fn().mockResolvedValue(0);
+    const probeGrpc = vi.fn().mockResolvedValue([]);
+    const probeGraphQL = vi.fn().mockResolvedValue([]);
+    const probeArchival = vi.fn().mockResolvedValue([]);
+
+    await runOneCycle(
+      config,
+      { fetchChainHead, probeGrpc, probeGraphQL, probeArchival },
+      { includeArchival: false },
+    );
+
+    expect(probeArchival).not.toHaveBeenCalled();
+  });
 });
 
 // ─── startScheduler ───────────────────────────────────────────────────────────
@@ -216,6 +236,39 @@ describe("startScheduler", () => {
 
     // 1 immediate + 2 interval ticks = 3 total
     expect(fetchChainHead).toHaveBeenCalledTimes(3);
+    clearInterval(handle);
+  });
+
+  it("runs archival providers on their own interval", async () => {
+    const config: SchedulerConfig = {
+      ...BASE_CONFIG,
+      archivalProviders: [{ id: "archive", endpoint: "archive.example.com:443" }],
+      intervalMs: 1000,
+      archivalIntervalMs: 3000,
+    };
+    const fetchChainHead = vi.fn().mockResolvedValue(0);
+    const probeGrpc = vi.fn().mockResolvedValue([]);
+    const probeGraphQL = vi.fn().mockResolvedValue([]);
+    const probeArchival = vi.fn().mockResolvedValue([]);
+
+    const handle = startScheduler(config, {
+      fetchChainHead,
+      probeGrpc,
+      probeGraphQL,
+      probeArchival,
+    });
+
+    await vi.advanceTimersByTimeAsync(2500);
+
+    expect(probeGrpc).toHaveBeenCalledTimes(3);
+    expect(probeGraphQL).toHaveBeenCalledTimes(3);
+    expect(probeArchival).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(probeGrpc).toHaveBeenCalledTimes(4);
+    expect(probeGraphQL).toHaveBeenCalledTimes(4);
+    expect(probeArchival).toHaveBeenCalledTimes(2);
     clearInterval(handle);
   });
 

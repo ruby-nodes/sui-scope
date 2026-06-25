@@ -235,6 +235,7 @@ Expected output (one row per active region):
 | Variable | Where set | Value |
 |---|---|---|
 | `PROBE_INTERVAL_MS` | `fly/probes.fly.toml` `[env]` | `60000` (ms) |
+| `ARCHIVAL_PROBE_INTERVAL_MS` | `fly/probes.fly.toml` `[env]` | `300000` (ms) |
 | `REGION` | auto-detected | Falls back to `FLY_REGION` (see below) |
 | `INGEST_URL` | `fly secrets` | `http://suiscope-api.internal:3000/ingest` |
 | `INGEST_SECRET` | `fly secrets` | same as API Step 2.2 |
