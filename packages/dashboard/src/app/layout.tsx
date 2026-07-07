@@ -14,13 +14,13 @@ export const metadata: Metadata = {
     "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
   openGraph: {
     type: "website",
-    url: "https://sui-scope.rubynodes.io/",
+    url: "https://scope.rubynodes.io/",
     title: "SuiScope - Blockchain Analytics Dashboard",
     description:
       "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
     images: [
       {
-        url: "https://sui-scope.rubynodes.io/og-image.png",
+        url: "https://scope.rubynodes.io/og-image.png",
         width: 1200,
         height: 630,
       },
@@ -29,11 +29,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    url: "https://sui-scope.rubynodes.io/",
+    url: "https://scope.rubynodes.io/",
     title: "SuiScope - Blockchain Analytics Dashboard",
     description:
       "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
-    images: ["https://sui-scope.rubynodes.io/og-image.png"],
+    images: ["https://scope.rubynodes.io/og-image.png"],
   },
 };
 
