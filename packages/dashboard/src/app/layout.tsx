@@ -29,7 +29,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    url: "https://scope.rubynodes.io/",
     title: "SuiScope - Blockchain Analytics Dashboard",
     description:
       "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
