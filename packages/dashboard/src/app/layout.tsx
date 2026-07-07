@@ -11,7 +11,30 @@ export const metadata: Metadata = {
     template: "%s · SuiScope",
   },
   description:
-    "Public benchmarking and observability for Sui infrastructure providers.",
+    "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
+  openGraph: {
+    type: "website",
+    url: "https://sui-scope.rubynodes.io/",
+    title: "SuiScope - Blockchain Analytics Dashboard",
+    description:
+      "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
+    images: [
+      {
+        url: "https://sui-scope.rubynodes.io/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    siteName: "SuiScope",
+  },
+  twitter: {
+    card: "summary_large_image",
+    url: "https://sui-scope.rubynodes.io/",
+    title: "SuiScope - Blockchain Analytics Dashboard",
+    description:
+      "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
+    images: ["https://sui-scope.rubynodes.io/og-image.png"],
+  },
 };
 
 export default function RootLayout({
