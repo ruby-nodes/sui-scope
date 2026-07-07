@@ -4,9 +4,9 @@
 
 SuiScope continuously probes public gRPC and GraphQL endpoints from multiple geographic regions and publishes comparable, unbiased metrics: latency, freshness, uptime, and error rate.
 
-- **Dashboard:** [suiscope.rubynodes.io](https://suiscope.rubynodes.io)
+- **Dashboard:** [scope.rubynodes.io](https://scope.rubynodes.io)
 - **Built by:** [Ruby Nodes](https://rubynodes.io)
-- **API docs:** [suiscope.rubynodes.io/api](https://suiscope.rubynodes.io/api)
+- **API docs:** [scope.rubynodes.io/api](https://scope.rubynodes.io/api)
 
 ---
 
@@ -165,7 +165,7 @@ Use this track if your endpoint requires an API key embedded in the URL (e.g. Qu
 | **Error rate** | Failed probes / total probes, 5-minute rolling window |
 | **Uptime** | Successful probes / total probes, 1-hour rolling window |
 
-Full definitions: [suiscope.rubynodes.io/methodology](https://suiscope.rubynodes.io/methodology)
+Full definitions: [scope.rubynodes.io/methodology](https://scope.rubynodes.io/methodology)
 
 ---
 

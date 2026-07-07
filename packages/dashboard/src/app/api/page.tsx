@@ -224,7 +224,7 @@ export default function ApiReferencePage() {
         </p>
         <p className="mt-1 font-mono text-sm text-text-muted">
           Base URL:{" "}
-          <span className="text-accent">https://api.suiscope.com</span>
+          <span className="text-accent">https://scope.rubynodes.io</span>
         </p>
       </div>
 
@@ -694,7 +694,7 @@ export default function ApiReferencePage() {
               client generation and tooling:
             </p>
             <a
-              href="https://github.com/your-org/sui-scope/blob/main/docs/openapi.yaml"
+              href="https://github.com/ruby-nodes/sui-scope/blob/main/docs/openapi.yaml"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded border border-border bg-bg-surface px-3 py-2 text-sm text-accent transition-colors hover:bg-bg-raised hover:border-accent/40"

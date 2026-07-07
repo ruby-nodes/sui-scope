@@ -6,7 +6,7 @@ info:
   description: |
     Read-only, unauthenticated REST API for SuiScope benchmark data.
 
-    Base URL: `https://api.suiscope.com`
+    Base URL: `https://scope.rubynodes.io`
 
     **Rate limit:** 60 requests per 60 seconds per IP address.
     Rate-limit headers (`RateLimit-Limit`, `RateLimit-Remaining`,
@@ -18,8 +18,10 @@ info:
     ```
 
 servers:
-  - url: https://api.suiscope.com
-    description: Production
+  - url: https://scope.rubynodes.io
+    description: Production custom domain
+  - url: https://suiscope-api.fly.dev
+    description: Backing Fly.io API
 
 tags:
   - name: providers

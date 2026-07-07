@@ -8,3 +8,9 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/v1/*"
+  to = "https://suiscope-api.fly.dev/v1/:splat"
+  status = 200
+  force = true
