@@ -143,6 +143,7 @@ providers:
     grpc_token_header: "x-api-key"
     grpc_token_env: "INODRA_GRPC_TOKEN"
     graphql_env: "INODRA_GRAPHQL_URL"
+    graphql_token_env: "INODRA_GRAPHQL_TOKEN"
     archival: "mainnet-grpc.inodra.com:443"
     archival_token_header: "x-api-key"
     archival_token_env: "INODRA_GRPC_TOKEN"
