@@ -132,3 +132,17 @@ providers:
     archival_env: "QUICKNODE_ARCHIVAL_URL"
     archival_token_header: "x-token"
     archival_token_env: "QUICKNODE_ARCHIVAL_TOKEN"
+
+  - id: inodra
+    name: "Inodra"
+    public: false
+    stream: false
+    regions:
+      - fra
+    grpc: "mainnet-grpc.inodra.com:443"
+    grpc_token_header: "x-api-key"
+    grpc_token_env: "INODRA_GRPC_TOKEN"
+    graphql_env: "INODRA_GRAPHQL_URL"
+    archival: "mainnet-grpc.inodra.com:443"
+    archival_token_header: "x-api-key"
+    archival_token_env: "INODRA_GRPC_TOKEN"
