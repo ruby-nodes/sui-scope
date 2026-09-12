@@ -65,7 +65,7 @@ fly secrets set \
 ### 1.3 Deploy
 
 ```bash
-fly deploy --config fly/clickhouse.fly.toml
+fly deploy fly --config clickhouse.fly.toml
 ```
 
 ClickHouse is not exposed publicly. The API will reach it at `http://suiscope-clickhouse.internal:8123`.
