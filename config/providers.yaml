@@ -73,12 +73,6 @@ providers:
     graphql: "https://graphql.mainnet.sui.io/graphql"
     archival: "archive.mainnet.sui.io:443"
 
-  - id: ankr
-    name: "Ankr"
-    public: true
-    grpc: "sui.grpc.ankr.com:443"
-    graphql: "https://rpc.ankr.com/http/sui_graphql"
-
   - id: 01node
     name: "01node"
     public: true
