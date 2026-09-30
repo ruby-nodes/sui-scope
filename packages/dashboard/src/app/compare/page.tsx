@@ -8,6 +8,9 @@ import type { ProviderMetrics } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Compare Providers",
+  description: "Compare Sui infrastructure provider performance side by side.",
+  alternates: { canonical: "/compare" },
+  robots: { index: false, follow: true },
 };
 
 interface Props {

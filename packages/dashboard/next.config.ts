@@ -8,6 +8,10 @@ z.object({
   NEXT_PUBLIC_API_URL: z.string().url(),
 }).parse(process.env);
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/openapi.yaml": ["../../docs/openapi.yaml"],
+  },
+};
 
 export default nextConfig;

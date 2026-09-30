@@ -6,12 +6,15 @@ import { NavBar } from "@/components/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://scope.rubynodes.io"),
   title: {
     default: "SuiScope",
     template: "%s · SuiScope",
   },
   description:
     "Benchmark and monitor Sui blockchain infrastructure performance. Track provider metrics, latency, and network health in real-time.",
+  applicationName: "SuiScope",
+  category: "technology",
   openGraph: {
     type: "website",
     url: "https://scope.rubynodes.io/",
@@ -39,12 +42,50 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://scope.rubynodes.io/#website",
+        url: "https://scope.rubynodes.io/",
+        name: "SuiScope",
+        description:
+          "Independent benchmarking and observability for Sui infrastructure providers.",
+        publisher: { "@id": "https://scope.rubynodes.io/#organization" },
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://scope.rubynodes.io/#organization",
+        name: "Ruby Nodes",
+        url: "https://rubynodes.io/",
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://scope.rubynodes.io/#dataset",
+        name: "SuiScope Sui Infrastructure Benchmark Data",
+        description:
+          "Continuously collected latency, freshness, uptime, and error-rate measurements for public Sui mainnet infrastructure endpoints.",
+        url: "https://scope.rubynodes.io/",
+        creator: { "@id": "https://scope.rubynodes.io/#organization" },
+        distribution: {
+          "@type": "DataDownload",
+          contentUrl: "https://scope.rubynodes.io/v1/metrics",
+          encodingFormat: "application/json",
+        },
+      },
+    ],
+  };
+
   return (
-    <html
-      lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
-    >
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="bg-bg-base font-sans text-text-primary antialiased flex flex-col min-h-screen">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+          }}
+        />
         <NavBar />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-border bg-bg-base/95 mt-8">

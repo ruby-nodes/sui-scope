@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Methodology",
   description:
     "How SuiScope probes Sui infrastructure providers: exact measurement definitions, probe mechanics, and anti-gaming approach.",
+  alternates: { canonical: "/methodology" },
 };
 
 /* ── Small layout helpers ──────────────────────────────────────────── */

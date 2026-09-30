@@ -20,17 +20,20 @@ export interface SectionHeadingProps {
   children: ReactNode;
   as?: "h1" | "h2" | "h3";
   className?: string;
+  id?: string;
 }
 
 export function SectionHeading({
   children,
   as: Tag = "h2",
   className = "",
+  id,
 }: SectionHeadingProps) {
   const sizeClass =
     Tag === "h1" ? "text-3xl" : Tag === "h2" ? "text-xl" : "text-lg";
   return (
     <Tag
+      id={id}
       className={`font-semibold tracking-tight text-text-primary ${sizeClass} ${className}`}
     >
       {children}
